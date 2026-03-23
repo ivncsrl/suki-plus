@@ -1,18 +1,51 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { getTransactions } from '@/lib/store';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { peso } from '@/lib/format';
-import { Transaction } from '@/lib/types';
+
+interface Transaction {
+  id: string;
+  total: number;
+  profit: number;
+  created_at: string;
+  items: { product_name: string; quantity: number; price: number }[];
+}
 
 const SalesPage = () => {
-  const [transactions] = useState<Transaction[]>(() => getTransactions().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data: txns } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+      if (!txns) return;
+
+      const txnIds = txns.map(t => t.id);
+      const { data: items } = await supabase.from('transaction_items').select('*').in('transaction_id', txnIds);
+
+      setTransactions(txns.map(t => ({
+        id: t.id,
+        total: Number(t.total),
+        profit: Number(t.profit),
+        created_at: t.created_at,
+        items: (items || []).filter(i => i.transaction_id === t.id).map(i => ({
+          product_name: i.product_name,
+          quantity: i.quantity,
+          price: Number(i.price),
+        })),
+      })));
+    };
+    load();
+  }, [user]);
+
   const filtered = useMemo(() => {
     return transactions.filter(t => {
-      const d = t.date.slice(0, 10);
+      const d = t.created_at.slice(0, 10);
       if (fromDate && d < fromDate) return false;
       if (toDate && d > toDate) return false;
       return true;
@@ -23,7 +56,7 @@ const SalesPage = () => {
   const totalProfit = filtered.reduce((s, t) => s + t.profit, 0);
 
   const today = new Date().toISOString().slice(0, 10);
-  const todaySales = transactions.filter(t => t.date.slice(0, 10) === today);
+  const todaySales = transactions.filter(t => t.created_at.slice(0, 10) === today);
   const todayTotal = todaySales.reduce((s, t) => s + t.total, 0);
   const todayProfit = todaySales.reduce((s, t) => s + t.profit, 0);
 
@@ -31,7 +64,6 @@ const SalesPage = () => {
     <div className="pb-20 max-w-lg mx-auto px-4 pt-4 animate-fade-in">
       <h1 className="text-xl font-extrabold mb-3">📊 Sales Summary</h1>
 
-      {/* Today's Summary */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-card rounded-lg p-3 border border-border">
           <p className="text-[10px] text-muted-foreground font-semibold">Today's Sales</p>
@@ -43,7 +75,6 @@ const SalesPage = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-2 mb-3">
         <div className="flex-1">
           <label className="text-[10px] text-muted-foreground font-semibold">From</label>
@@ -55,7 +86,6 @@ const SalesPage = () => {
         </div>
       </div>
 
-      {/* Filtered Summary */}
       {(fromDate || toDate) && (
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div className="bg-secondary rounded-lg p-2 text-center">
@@ -69,23 +99,20 @@ const SalesPage = () => {
         </div>
       )}
 
-      {/* Transaction Log */}
       <div className="space-y-2">
-        {filtered.length === 0 && (
-          <p className="text-center text-muted-foreground py-8">No transactions yet</p>
-        )}
+        {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No transactions yet</p>}
         {filtered.map(t => (
           <div key={t.id} className="bg-card rounded-xl border border-border p-3">
             <div className="flex justify-between items-center mb-1.5">
               <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                {new Date(t.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {new Date(t.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </span>
               <span className="text-sm font-extrabold text-primary">{peso(t.total)}</span>
             </div>
             <div className="text-xs text-muted-foreground">
               {t.items.map((item, i) => (
-                <span key={i}>{item.name} ×{item.quantity}{i < t.items.length - 1 ? ', ' : ''}</span>
+                <span key={i}>{item.product_name} ×{item.quantity}{i < t.items.length - 1 ? ', ' : ''}</span>
               ))}
             </div>
             <div className="text-xs font-semibold text-success mt-1">Profit: {peso(t.profit)}</div>
