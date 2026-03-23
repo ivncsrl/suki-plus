@@ -14,7 +14,167 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          description: string | null
+          destination: string | null
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          description?: string | null
+          destination?: string | null
+          id?: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          description?: string | null
+          destination?: string | null
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          buying_price: number
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          selling_price: number
+          stock: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          buying_price?: number
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          selling_price?: number
+          stock?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          buying_price?: number
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          selling_price?: number
+          stock?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          owner_name: string | null
+          store_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_name?: string | null
+          store_name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_name?: string | null
+          store_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transaction_items: {
+        Row: {
+          cost: number
+          id: string
+          price: number
+          product_name: string
+          quantity: number
+          transaction_id: string
+        }
+        Insert: {
+          cost: number
+          id?: string
+          price: number
+          product_name: string
+          quantity: number
+          transaction_id: string
+        }
+        Update: {
+          cost?: number
+          id?: string
+          price?: number
+          product_name?: string
+          quantity?: number
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_items_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          change: number
+          created_at: string
+          id: string
+          paid: number
+          profit: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          change?: number
+          created_at?: string
+          id?: string
+          paid?: number
+          profit?: number
+          total?: number
+          user_id: string
+        }
+        Update: {
+          change?: number
+          created_at?: string
+          id?: string
+          paid?: number
+          profit?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
