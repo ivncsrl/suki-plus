@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Package, BarChart3, Receipt } from 'lucide-react';
+import { Home, ShoppingCart, Package, BarChart3, Receipt } from 'lucide-react';
 
 const tabs = [
-  { path: '/', label: 'POS', icon: ShoppingCart },
+  { path: '/', label: 'Home', icon: Home },
+  { path: '/pos', label: 'POS', icon: ShoppingCart },
   { path: '/inventory', label: 'Inventory', icon: Package },
   { path: '/sales', label: 'Sales', icon: BarChart3 },
   { path: '/expenses', label: 'Expenses', icon: Receipt },
@@ -26,7 +27,7 @@ const BottomNav = () => {
               }`}
             >
               <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-              <span className={`text-[11px] ${active ? 'font-bold' : 'font-semibold'}`}>{label}</span>
+              <span className={`text-[10px] ${active ? 'font-bold' : 'font-semibold'}`}>{label}</span>
             </button>
           );
         })}
