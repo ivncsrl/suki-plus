@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Pencil, Trash2, AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso } from '@/lib/format';
 import { toast } from 'sonner';
+import CategoryCombobox from '@/components/CategoryCombobox';
 
 const LOW_STOCK = 5;
 const emptyForm = { name: '', category: '', stock: '', buyingPrice: '', sellingPrice: '' };
@@ -33,6 +34,11 @@ const InventoryPage = () => {
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
+
+  const categories = useMemo(() => {
+    const cats = products.map(p => p.category).filter((c): c is string => !!c && c.trim() !== '');
+    return [...new Set(cats)].sort();
+  }, [products]);
 
   const totalValue = products.reduce((s, p) => s + p.buying_price * p.stock, 0);
   const totalRevenue = products.reduce((s, p) => s + p.selling_price * p.stock, 0);
@@ -136,7 +142,7 @@ const InventoryPage = () => {
             </div>
             <div className="space-y-3">
               <Input placeholder="Product name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-11" />
-              <Input placeholder="Category (optional)" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="h-11" />
+              <CategoryCombobox value={form.category} onChange={val => setForm({ ...form, category: val })} categories={categories} />
               <div className="grid grid-cols-3 gap-2">
                 <Input type="number" inputMode="numeric" placeholder="Stock" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Buy price" value={form.buyingPrice} onChange={e => setForm({ ...form, buyingPrice: e.target.value })} className="h-11" />
