@@ -35,6 +35,11 @@ const InventoryPage = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  const categories = useMemo(() => {
+    const cats = products.map(p => p.category).filter((c): c is string => !!c && c.trim() !== '');
+    return [...new Set(cats)].sort();
+  }, [products]);
+
   const totalValue = products.reduce((s, p) => s + p.buying_price * p.stock, 0);
   const totalRevenue = products.reduce((s, p) => s + p.selling_price * p.stock, 0);
   const totalProfit = totalRevenue - totalValue;
