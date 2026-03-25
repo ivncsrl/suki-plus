@@ -142,7 +142,7 @@ const InventoryPage = () => {
             </div>
             <div className="space-y-3">
               <Input placeholder="Product name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-11" />
-              <Input placeholder="Category (optional)" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="h-11" />
+              <CategoryCombobox value={form.category} onChange={val => setForm({ ...form, category: val })} categories={categories} />
               <div className="grid grid-cols-3 gap-2">
                 <Input type="number" inputMode="numeric" placeholder="Stock" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Buy price" value={form.buyingPrice} onChange={e => setForm({ ...form, buyingPrice: e.target.value })} className="h-11" />
