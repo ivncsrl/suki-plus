@@ -135,7 +135,7 @@ const InventoryPage = () => {
 
       {showForm && (
         <div className="fixed inset-0 z-50 bg-foreground/40 flex items-end justify-center" onClick={() => setShowForm(false)}>
-          <div className="bg-background rounded-t-2xl p-5 w-full max-w-lg animate-fade-in" onClick={e => e.stopPropagation()}>
+          <div className="bg-background rounded-t-2xl p-5 pb-8 w-full max-w-lg animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-extrabold text-lg">{editId ? 'Edit Product' : 'New Product'}</h3>
               <button onClick={() => setShowForm(false)}><X className="w-5 h-5" /></button>
