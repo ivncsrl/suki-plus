@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso } from '@/lib/format';
@@ -22,6 +22,7 @@ const DashboardPage = () => {
     storeName: 'My Store', todaySales: 0, todayProfit: 0, todayTxnCount: 0, totalProducts: 0, lowStockProducts: [],
   });
   const [loading, setLoading] = useState(true);
+  const [showLowStock, setShowLowStock] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -98,27 +99,29 @@ const DashboardPage = () => {
       </div>
 
       {/* Low Stock Alerts */}
-      <div className="bg-card rounded-xl border border-border p-4">
-        <div className="flex items-center gap-2 mb-3">
+      <button
+        onClick={() => setShowLowStock(prev => !prev)}
+        className="w-full bg-card rounded-xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
+      >
+        <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-destructive" />
           <h2 className="font-bold text-sm">Low Stock Alerts</h2>
           <span className="text-[10px] bg-destructive/10 text-destructive font-bold px-1.5 py-0.5 rounded-full">{data.lowStockProducts.length}</span>
+          <span className="ml-auto text-xs text-muted-foreground">{showLowStock ? '▲' : '▼'}</span>
         </div>
-        {data.lowStockProducts.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-3">All stocked up! 🎉</p>
-        ) : (
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {data.lowStockProducts.map(p => (
-              <div key={p.id} className="flex justify-between items-center text-sm">
-                <span className="truncate font-medium">{p.name}</span>
-                <span className={`font-bold ${p.stock === 0 ? 'text-destructive' : 'text-accent-foreground'}`}>
-                  {p.stock === 0 ? 'OUT' : `${p.stock} left`}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      </button>
+      {showLowStock && data.lowStockProducts.length > 0 && (
+        <div className="bg-card rounded-b-xl border border-t-0 border-border px-4 pb-4 -mt-2 pt-2 space-y-2 max-h-48 overflow-y-auto animate-fade-in">
+          {data.lowStockProducts.map(p => (
+            <div key={p.id} className="flex justify-between items-center text-sm">
+              <span className="truncate font-medium">{p.name}</span>
+              <span className={`font-bold ${p.stock === 0 ? 'text-destructive' : 'text-accent-foreground'}`}>
+                {p.stock === 0 ? 'OUT' : `${p.stock} left`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
