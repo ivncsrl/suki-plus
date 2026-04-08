@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { peso } from '@/lib/format';
 import { toast } from 'sonner';
 import CategoryCombobox from '@/components/CategoryCombobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const LOW_STOCK = 5;
 const emptyForm = { name: '', category: '', stock: '', buyingPrice: '', sellingPrice: '' };
@@ -27,6 +29,10 @@ const InventoryPage = () => {
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('__all__');
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -42,10 +48,18 @@ const InventoryPage = () => {
   }, [products]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return products;
-    const q = search.toLowerCase();
-    return products.filter(p => p.name.toLowerCase().includes(q) || (p.category && p.category.toLowerCase().includes(q)));
-  }, [products, search]);
+    let result = products;
+    if (categoryFilter === '__uncategorized__') {
+      result = result.filter(p => !p.category || p.category.trim() === '');
+    } else if (categoryFilter !== '__all__') {
+      result = result.filter(p => p.category === categoryFilter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(p => p.name.toLowerCase().includes(q) || (p.category && p.category.toLowerCase().includes(q)));
+    }
+    return result;
+  }, [products, search, categoryFilter]);
 
   const totalValue = products.reduce((s, p) => s + p.buying_price * p.stock, 0);
   const totalRevenue = products.reduce((s, p) => s + p.selling_price * p.stock, 0);
@@ -89,18 +103,54 @@ const InventoryPage = () => {
     load();
   };
 
+  const handleRenameCategory = async () => {
+    if (!user || !editingCategory || !newCategoryName.trim()) return;
+    const trimmed = newCategoryName.trim();
+    if (trimmed === editingCategory) { setEditingCategory(null); return; }
+    const { error } = await supabase.from('products').update({ category: trimmed }).eq('user_id', user.id).eq('category', editingCategory);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(`Renamed "${editingCategory}" → "${trimmed}"`);
+      if (categoryFilter === editingCategory) setCategoryFilter(trimmed);
+      setEditingCategory(null);
+      setNewCategoryName('');
+      load();
+    }
+  };
+
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <div className="flex justify-between items-center mb-3">
         <h1 className="text-xl font-extrabold">📦 Inventory</h1>
-        <Button size="sm" onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-1" /> Add
-        </Button>
+        <div className="flex gap-2">
+          {categories.length > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setShowCategoryManager(true)}>
+              <Tag className="w-4 h-4 mr-1" /> Categories
+            </Button>
+          )}
+          <Button size="sm" onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}>
+            <Plus className="w-4 h-4 mr-1" /> Add
+          </Button>
+        </div>
       </div>
 
-      <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
+      <div className="flex gap-2 mb-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
+        </div>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[140px] h-10">
+            <Filter className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All</SelectItem>
+            <SelectItem value="__uncategorized__">Uncategorized</SelectItem>
+            {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-4">
@@ -166,6 +216,44 @@ const InventoryPage = () => {
           </div>
         </div>
       )}
+
+      <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Manage Categories</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {categories.map(cat => (
+              <div key={cat} className="flex items-center gap-2">
+                {editingCategory === cat ? (
+                  <>
+                    <Input
+                      value={newCategoryName}
+                      onChange={e => setNewCategoryName(e.target.value)}
+                      className="h-9 flex-1"
+                      autoFocus
+                      onKeyDown={e => e.key === 'Enter' && handleRenameCategory()}
+                    />
+                    <Button size="sm" onClick={handleRenameCategory} className="h-9">Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingCategory(null)} className="h-9 px-2">
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-sm font-medium">{cat}</span>
+                    <span className="text-xs text-muted-foreground">{products.filter(p => p.category === cat).length} items</span>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditingCategory(cat); setNewCategoryName(cat); }} className="h-8 px-2">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ))}
+            {categories.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No categories yet</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
