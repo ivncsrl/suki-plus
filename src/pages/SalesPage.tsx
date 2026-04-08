@@ -61,7 +61,7 @@ const SalesPage = () => {
   const todayProfit = todaySales.reduce((s, t) => s + t.profit, 0);
 
   return (
-    <div className="pb-20 max-w-lg mx-auto px-4 pt-4 animate-fade-in">
+    <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <h1 className="text-xl font-extrabold mb-3">📊 Sales Summary</h1>
 
       <div className="grid grid-cols-2 gap-2 mb-4">

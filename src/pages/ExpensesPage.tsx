@@ -71,7 +71,7 @@ const ExpensesPage = () => {
   };
 
   return (
-    <div className="pb-20 max-w-lg mx-auto px-4 pt-4 animate-fade-in">
+    <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <div className="flex justify-between items-center mb-3">
         <h1 className="text-xl font-extrabold">💸 Expenses</h1>
         <Button size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-1" /> Add</Button>

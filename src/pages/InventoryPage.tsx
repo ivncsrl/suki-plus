@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,7 @@ const InventoryPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -39,6 +40,12 @@ const InventoryPage = () => {
     const cats = products.map(p => p.category).filter((c): c is string => !!c && c.trim() !== '');
     return [...new Set(cats)].sort();
   }, [products]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return products;
+    const q = search.toLowerCase();
+    return products.filter(p => p.name.toLowerCase().includes(q) || (p.category && p.category.toLowerCase().includes(q)));
+  }, [products, search]);
 
   const totalValue = products.reduce((s, p) => s + p.buying_price * p.stock, 0);
   const totalRevenue = products.reduce((s, p) => s + p.selling_price * p.stock, 0);
@@ -83,12 +90,17 @@ const InventoryPage = () => {
   };
 
   return (
-    <div className="pb-20 max-w-lg mx-auto px-4 pt-4 animate-fade-in">
+    <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <div className="flex justify-between items-center mb-3">
         <h1 className="text-xl font-extrabold">📦 Inventory</h1>
         <Button size="sm" onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}>
           <Plus className="w-4 h-4 mr-1" /> Add
         </Button>
+      </div>
+
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-4">
@@ -108,7 +120,8 @@ const InventoryPage = () => {
 
       <div className="space-y-2">
         {products.length === 0 && <p className="text-center text-muted-foreground py-8">No products yet. Tap "Add" to start!</p>}
-        {products.map(p => (
+        {filtered.length === 0 && products.length > 0 && <p className="text-center text-muted-foreground py-4">No matching products</p>}
+        {filtered.map(p => (
           <div key={p.id} className={`bg-card rounded-xl border p-3 ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'}`}>
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
