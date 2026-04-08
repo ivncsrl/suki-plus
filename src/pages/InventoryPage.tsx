@@ -314,6 +314,28 @@ const InventoryPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showBulkMove} onOpenChange={setShowBulkMove}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Move {selectedIds.size} Product(s) to Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={bulkMoveTarget} onValueChange={setBulkMoveTarget}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select target category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__uncategorized__">Uncategorized</SelectItem>
+                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleBulkMove} disabled={!bulkMoveTarget} className="w-full h-11 font-bold">
+              <MoveRight className="w-4 h-4 mr-1" /> Move Products
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
