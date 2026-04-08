@@ -120,6 +120,8 @@ const InventoryPage = () => {
       setNewCategoryName('');
       load();
     }
+  };
+
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
