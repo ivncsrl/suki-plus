@@ -33,6 +33,9 @@ const InventoryPage = () => {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkMove, setShowBulkMove] = useState(false);
+  const [bulkMoveTarget, setBulkMoveTarget] = useState('');
 
   const load = useCallback(async () => {
     if (!user) return;
