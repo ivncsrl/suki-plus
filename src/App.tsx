@@ -14,6 +14,7 @@ import SalesPage from "./pages/SalesPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
+import NotesWidget from "./components/NotesWidget";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const ProtectedRoutes = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BottomNav />
+      <NotesWidget />
     </>
   );
 };
