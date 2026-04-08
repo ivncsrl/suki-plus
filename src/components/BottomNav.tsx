@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, ShoppingCart, Package, BarChart3, Receipt } from 'lucide-react';
+import { Home, ShoppingCart, Package, BarChart3, Receipt, User } from 'lucide-react';
 
 const tabs = [
   { path: '/', label: 'Home', icon: Home },
@@ -7,6 +7,7 @@ const tabs = [
   { path: '/inventory', label: 'Inventory', icon: Package },
   { path: '/sales', label: 'Sales', icon: BarChart3 },
   { path: '/expenses', label: 'Expenses', icon: Receipt },
+  { path: '/profile', label: 'Profile', icon: User },
 ];
 
 const BottomNav = () => {

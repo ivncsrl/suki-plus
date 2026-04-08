@@ -109,7 +109,7 @@ const POSPage = () => {
   };
 
   return (
-    <div className="pb-20 max-w-lg mx-auto px-4 pt-4 animate-fade-in">
+    <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <h1 className="text-xl font-extrabold mb-3">🛒 Point of Sale</h1>
 
       <div className="relative mb-3">

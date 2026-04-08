@@ -53,7 +53,7 @@ const DashboardPage = () => {
   if (loading) return <div className="flex items-center justify-center min-h-screen text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="pb-20 max-w-lg mx-auto px-4 pt-4 animate-fade-in">
+    <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h1 className="text-xl font-extrabold">🏪 {data.storeName}</h1>
