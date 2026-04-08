@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +33,9 @@ const InventoryPage = () => {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkMove, setShowBulkMove] = useState(false);
+  const [bulkMoveTarget, setBulkMoveTarget] = useState('');
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -117,21 +120,61 @@ const InventoryPage = () => {
       setNewCategoryName('');
       load();
     }
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
+
+  const selectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(p => p.id)));
+    }
+  };
+
+  const handleBulkMove = async () => {
+    if (!user || selectedIds.size === 0) return;
+    const target = bulkMoveTarget === '__uncategorized__' ? '' : bulkMoveTarget;
+    const { error } = await supabase.from('products').update({ category: target }).in('id', Array.from(selectedIds)).eq('user_id', user.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Moved ${selectedIds.size} product(s)`);
+    setSelectedIds(new Set());
+    setShowBulkMove(false);
+    setBulkMoveTarget('');
+    load();
+  };
+
+  const isSelecting = selectedIds.size > 0;
 
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <div className="flex justify-between items-center mb-3">
         <h1 className="text-xl font-extrabold">📦 Inventory</h1>
         <div className="flex gap-2">
-          {categories.length > 0 && (
+          {isSelecting && (
+            <Button size="sm" variant="outline" onClick={() => setShowBulkMove(true)}>
+              <MoveRight className="w-4 h-4 mr-1" /> Move ({selectedIds.size})
+            </Button>
+          )}
+          {isSelecting && (
+            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+          {categories.length > 0 && !isSelecting && (
             <Button size="sm" variant="outline" onClick={() => setShowCategoryManager(true)}>
               <Tag className="w-4 h-4 mr-1" /> Categories
             </Button>
           )}
-          <Button size="sm" onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> Add
-          </Button>
+          {!isSelecting && (
+            <Button size="sm" onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-1" /> Add
+            </Button>
+          )}
         </div>
       </div>
 
@@ -168,18 +211,35 @@ const InventoryPage = () => {
         </div>
       </div>
 
+      {filtered.length > 0 && (
+        <div className="flex items-center gap-2 mb-2">
+          <button onClick={selectAll} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <CheckSquare className="w-3.5 h-3.5" />
+            {selectedIds.size === filtered.length ? 'Deselect All' : 'Select All'}
+          </button>
+        </div>
+      )}
+
       <div className="space-y-2">
         {products.length === 0 && <p className="text-center text-muted-foreground py-8">No products yet. Tap "Add" to start!</p>}
         {filtered.length === 0 && products.length > 0 && <p className="text-center text-muted-foreground py-4">No matching products</p>}
         {filtered.map(p => (
-          <div key={p.id} className={`bg-card rounded-xl border p-3 ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'}`}>
+          <div key={p.id} className={`bg-card rounded-xl border p-3 ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''}`}>
             <div className="flex justify-between items-start">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-sm truncate">{p.name}</h3>
-                  {p.stock <= LOW_STOCK && <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />}
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(p.id)}
+                  onChange={() => toggleSelect(p.id)}
+                  className="w-4 h-4 rounded border-border accent-primary shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-sm truncate">{p.name}</h3>
+                    {p.stock <= LOW_STOCK && <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />}
+                  </div>
+                  {p.category && <p className="text-[10px] text-muted-foreground">{p.category}</p>}
                 </div>
-                {p.category && <p className="text-[10px] text-muted-foreground">{p.category}</p>}
               </div>
               <div className="flex gap-1 ml-2">
                 <button onClick={() => startEdit(p)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Pencil className="w-3.5 h-3.5" /></button>
@@ -251,6 +311,28 @@ const InventoryPage = () => {
               </div>
             ))}
             {categories.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No categories yet</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showBulkMove} onOpenChange={setShowBulkMove}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Move {selectedIds.size} Product(s) to Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={bulkMoveTarget} onValueChange={setBulkMoveTarget}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select target category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__uncategorized__">Uncategorized</SelectItem>
+                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleBulkMove} disabled={!bulkMoveTarget} className="w-full h-11 font-bold">
+              <MoveRight className="w-4 h-4 mr-1" /> Move Products
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
