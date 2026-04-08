@@ -120,21 +120,61 @@ const InventoryPage = () => {
       setNewCategoryName('');
       load();
     }
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
+
+  const selectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(p => p.id)));
+    }
+  };
+
+  const handleBulkMove = async () => {
+    if (!user || selectedIds.size === 0) return;
+    const target = bulkMoveTarget === '__uncategorized__' ? '' : bulkMoveTarget;
+    const { error } = await supabase.from('products').update({ category: target }).in('id', Array.from(selectedIds)).eq('user_id', user.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Moved ${selectedIds.size} product(s)`);
+    setSelectedIds(new Set());
+    setShowBulkMove(false);
+    setBulkMoveTarget('');
+    load();
+  };
+
+  const isSelecting = selectedIds.size > 0;
 
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <div className="flex justify-between items-center mb-3">
         <h1 className="text-xl font-extrabold">📦 Inventory</h1>
         <div className="flex gap-2">
-          {categories.length > 0 && (
+          {isSelecting && (
+            <Button size="sm" variant="outline" onClick={() => setShowBulkMove(true)}>
+              <MoveRight className="w-4 h-4 mr-1" /> Move ({selectedIds.size})
+            </Button>
+          )}
+          {isSelecting && (
+            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+          {categories.length > 0 && !isSelecting && (
             <Button size="sm" variant="outline" onClick={() => setShowCategoryManager(true)}>
               <Tag className="w-4 h-4 mr-1" /> Categories
             </Button>
           )}
-          <Button size="sm" onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> Add
-          </Button>
+          {!isSelecting && (
+            <Button size="sm" onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-1" /> Add
+            </Button>
+          )}
         </div>
       </div>
 
