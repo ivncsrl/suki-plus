@@ -36,6 +36,8 @@ const InventoryPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkMove, setShowBulkMove] = useState(false);
   const [bulkMoveTarget, setBulkMoveTarget] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [recentlyDeleted, setRecentlyDeleted] = useState<Product | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -101,9 +103,32 @@ const InventoryPage = () => {
     setEditId(p.id); setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    await supabase.from('products').delete().eq('id', id);
+  const handleDelete = async () => {
+    if (!deleteTarget || !user) return;
+    const product = deleteTarget;
+    setDeleteTarget(null);
+    await supabase.from('products').delete().eq('id', product.id);
+    setRecentlyDeleted(product);
     load();
+    toast.success(`"${product.name}" deleted`, {
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          await supabase.from('products').insert({
+            user_id: user.id,
+            name: product.name,
+            category: product.category || '',
+            stock: product.stock,
+            buying_price: product.buying_price,
+            selling_price: product.selling_price,
+          });
+          setRecentlyDeleted(null);
+          load();
+          toast.success(`"${product.name}" restored`);
+        },
+      },
+      duration: 6000,
+    });
   };
 
   const handleRenameCategory = async () => {
@@ -226,34 +251,41 @@ const InventoryPage = () => {
         {products.length === 0 && <p className="text-center text-muted-foreground py-8">No products yet. Tap "Add" to start!</p>}
         {filtered.length === 0 && products.length > 0 && <p className="text-center text-muted-foreground py-4">No matching products</p>}
         {filtered.map(p => (
-          <div key={p.id} className={`bg-card rounded-xl border p-3 ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''}`}>
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(p.id)}
-                  onChange={() => toggleSelect(p.id)}
-                  className="w-4 h-4 rounded border-border accent-primary shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="font-bold text-sm truncate">{p.name}</h3>
-                    {p.stock <= LOW_STOCK && <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />}
+          <div key={p.id} className="flex items-start gap-2">
+            <div className={`flex-1 bg-card rounded-xl border p-3 ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''}`}>
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(p.id)}
+                    onChange={() => toggleSelect(p.id)}
+                    className="w-4 h-4 rounded border-border accent-primary shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-bold text-sm truncate">{p.name}</h3>
+                      {p.stock <= LOW_STOCK && <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />}
+                    </div>
+                    {p.category && <p className="text-[10px] text-muted-foreground">{p.category}</p>}
                   </div>
-                  {p.category && <p className="text-[10px] text-muted-foreground">{p.category}</p>}
                 </div>
+                <button onClick={() => startEdit(p)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90 ml-2">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <div className="flex gap-1 ml-2">
-                <button onClick={() => startEdit(p)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Pencil className="w-3.5 h-3.5" /></button>
-                <button onClick={() => handleDelete(p.id)} className="w-7 h-7 rounded-md bg-destructive/10 flex items-center justify-center active:scale-90 text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
+              <div className="grid grid-cols-4 gap-1 mt-2 text-[11px]">
+                <div><span className="text-muted-foreground">Stock:</span> <span className="font-bold">{p.stock}</span></div>
+                <div><span className="text-muted-foreground">Buy:</span> <span className="font-bold">{peso(p.buying_price)}</span></div>
+                <div><span className="text-muted-foreground">Sell:</span> <span className="font-bold">{peso(p.selling_price)}</span></div>
+                <div><span className="text-muted-foreground">Profit:</span> <span className="font-bold text-success">{peso(p.selling_price - p.buying_price)}</span></div>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-1 mt-2 text-[11px]">
-              <div><span className="text-muted-foreground">Stock:</span> <span className="font-bold">{p.stock}</span></div>
-              <div><span className="text-muted-foreground">Buy:</span> <span className="font-bold">{peso(p.buying_price)}</span></div>
-              <div><span className="text-muted-foreground">Sell:</span> <span className="font-bold">{peso(p.selling_price)}</span></div>
-              <div><span className="text-muted-foreground">Profit:</span> <span className="font-bold text-success">{peso(p.selling_price - p.buying_price)}</span></div>
-            </div>
+            <button
+              onClick={() => setDeleteTarget(p)}
+              className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center active:scale-90 text-destructive shrink-0 mt-2"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         ))}
       </div>
@@ -313,6 +345,23 @@ const InventoryPage = () => {
               </div>
             ))}
             {categories.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No categories yet</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>Delete Product</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete <span className="font-bold text-foreground">"{deleteTarget?.name}"</span>? You can undo this right after.
+          </p>
+          <div className="flex gap-2 mt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" className="flex-1" onClick={handleDelete}>
+              <Trash2 className="w-4 h-4 mr-1" /> Delete
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
