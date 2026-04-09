@@ -126,30 +126,27 @@ const ExpensesPage = () => {
         ))}
       </div>
 
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-foreground/40 flex items-end justify-center" onClick={() => setShowForm(false)}>
-          <div className="bg-background rounded-t-2xl p-5 w-full max-w-lg animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-extrabold text-lg">New Expense</h3>
-              <button onClick={() => setShowForm(false)}><X className="w-5 h-5" /></button>
+      <Sheet open={showForm} onOpenChange={setShowForm}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="font-extrabold text-lg">New Expense</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-3 mt-4">
+            <div className="flex gap-2 flex-wrap">
+              {TYPES.map(t => (
+                <button key={t} onClick={() => setForm({ ...form, type: t })} className={`text-xs font-semibold px-3 py-1.5 rounded-full active:scale-95 ${form.type === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>{t}</button>
+              ))}
             </div>
-            <div className="space-y-3">
-              <div className="flex gap-2 flex-wrap">
-                {TYPES.map(t => (
-                  <button key={t} onClick={() => setForm({ ...form, type: t })} className={`text-xs font-semibold px-3 py-1.5 rounded-full active:scale-95 ${form.type === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>{t}</button>
-                ))}
-              </div>
-              <Input placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="h-11" />
-              <Input type="number" inputMode="decimal" placeholder="Amount (₱)" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="h-11" />
-              <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="h-11" />
-              {(form.type === 'Travel' || form.type === 'Restock Trip') && (
-                <Input placeholder="Destination city (optional)" value={form.destination} onChange={e => setForm({ ...form, destination: e.target.value })} className="h-11" />
-              )}
-              <Button onClick={handleSubmit} className="w-full h-11 font-bold">Add Expense</Button>
-            </div>
+            <Input placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="h-11" />
+            <Input type="number" inputMode="decimal" placeholder="Amount (₱)" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="h-11" />
+            <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="h-11" />
+            {(form.type === 'Travel' || form.type === 'Restock Trip') && (
+              <Input placeholder="Destination city (optional)" value={form.destination} onChange={e => setForm({ ...form, destination: e.target.value })} className="h-11" />
+            )}
+            <Button onClick={handleSubmit} className="w-full h-11 font-bold">Add Expense</Button>
           </div>
-        </div>
-      )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
