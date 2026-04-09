@@ -59,9 +59,18 @@ const POSPage = () => {
   const updateQty = (id: string, delta: number) => {
     setCart(prev => prev.map(c => {
       if (c.product.id !== id) return c;
-      const newQty = c.quantity + delta;
+      const newQty = Math.round((c.quantity + delta) * 100) / 100;
       if (newQty <= 0 || newQty > c.product.stock) return c;
       return { ...c, quantity: newQty };
+    }));
+  };
+
+  const setQty = (id: string, value: string) => {
+    setCart(prev => prev.map(c => {
+      if (c.product.id !== id) return c;
+      const num = parseFloat(value);
+      if (isNaN(num) || num <= 0 || num > c.product.stock) return { ...c, quantity: parseFloat(value) || 0 };
+      return { ...c, quantity: num };
     }));
   };
 
@@ -141,9 +150,16 @@ const POSPage = () => {
                   <p className="text-xs text-muted-foreground">{peso(c.product.selling_price)} each</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => updateQty(c.product.id, -1)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
-                  <span className="w-7 text-center text-sm font-bold">{c.quantity}</span>
-                  <button onClick={() => updateQty(c.product.id, 1)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
+                  <button onClick={() => updateQty(c.product.id, -0.5)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={c.quantity}
+                    onChange={e => setQty(c.product.id, e.target.value)}
+                    className="w-14 text-center text-sm font-bold bg-background border border-border rounded-md h-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button onClick={() => updateQty(c.product.id, 0.5)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
                 </div>
                 <p className="text-sm font-bold w-16 text-right">{peso(c.product.selling_price * c.quantity)}</p>
                 <button onClick={() => removeFromCart(c.product.id)} className="text-destructive active:scale-90"><Trash2 className="w-4 h-4" /></button>
