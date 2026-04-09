@@ -59,9 +59,18 @@ const POSPage = () => {
   const updateQty = (id: string, delta: number) => {
     setCart(prev => prev.map(c => {
       if (c.product.id !== id) return c;
-      const newQty = c.quantity + delta;
+      const newQty = Math.round((c.quantity + delta) * 100) / 100;
       if (newQty <= 0 || newQty > c.product.stock) return c;
       return { ...c, quantity: newQty };
+    }));
+  };
+
+  const setQty = (id: string, value: string) => {
+    setCart(prev => prev.map(c => {
+      if (c.product.id !== id) return c;
+      const num = parseFloat(value);
+      if (isNaN(num) || num <= 0 || num > c.product.stock) return { ...c, quantity: parseFloat(value) || 0 };
+      return { ...c, quantity: num };
     }));
   };
 
