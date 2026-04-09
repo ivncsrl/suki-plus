@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Plus, Trash2, TrendingDown, TrendingUp } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -126,12 +126,12 @@ const ExpensesPage = () => {
         ))}
       </div>
 
-      <Sheet open={showForm} onOpenChange={setShowForm}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="font-extrabold text-lg">New Expense</SheetTitle>
-          </SheetHeader>
-          <div className="space-y-3 mt-4">
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-extrabold text-lg">New Expense</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
             <div className="flex gap-2 flex-wrap">
               {TYPES.map(t => (
                 <button key={t} onClick={() => setForm({ ...form, type: t })} className={`text-xs font-semibold px-3 py-1.5 rounded-full active:scale-95 ${form.type === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>{t}</button>
@@ -145,8 +145,8 @@ const ExpensesPage = () => {
             )}
             <Button onClick={handleSubmit} className="w-full h-11 font-bold">Add Expense</Button>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
