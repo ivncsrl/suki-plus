@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { peso } from '@/lib/format';
 import { toast } from 'sonner';
 
-const TYPES = ['Gasoline', 'Travel', 'Restock Trip', 'Other'] as const;
+const TYPES = ['Product', 'Gasoline', 'Travel', 'Restock Trip', 'Other'] as const;
 
 const ExpensesPage = () => {
   const { user } = useAuth();
