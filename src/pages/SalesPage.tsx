@@ -21,7 +21,9 @@ const SalesPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
   useEffect(() => {
     if (!user) return;
     const load = async () => {
