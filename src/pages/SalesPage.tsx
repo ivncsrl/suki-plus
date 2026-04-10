@@ -1,9 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso } from '@/lib/format';
+import { toast } from 'sonner';
 
 interface Transaction {
   id: string;
