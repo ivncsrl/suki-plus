@@ -96,13 +96,15 @@ const SalesPage = () => {
   }, [user]);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return transactions.filter(t => {
       const d = toLocalDate(t.created_at);
       if (fromDate && d < fromDate) return false;
       if (toDate && d > toDate) return false;
+      if (q && !t.items.some(i => i.product_name.toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [transactions, fromDate, toDate]);
+  }, [transactions, fromDate, toDate, searchQuery]);
 
   const totalSales = filtered.reduce((s, t) => s + t.total, 0);
   const totalProfit = filtered.reduce((s, t) => s + t.profit, 0);
