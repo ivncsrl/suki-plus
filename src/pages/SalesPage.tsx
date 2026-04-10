@@ -212,7 +212,16 @@ const SalesPage = () => {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-3">
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search product sold..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="h-9 text-sm pl-9"
+        />
+      </div>
+
         <div className="flex-1">
           <label className="text-[10px] text-muted-foreground font-semibold">From</label>
           <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="h-9 text-sm" />
