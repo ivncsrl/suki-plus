@@ -222,6 +222,7 @@ const SalesPage = () => {
         />
       </div>
 
+      <div className="flex gap-2 mb-3">
         <div className="flex-1">
           <label className="text-[10px] text-muted-foreground font-semibold">From</label>
           <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="h-9 text-sm" />
