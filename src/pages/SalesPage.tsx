@@ -42,6 +42,7 @@ const SalesPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Delete state
   const [deleteId, setDeleteId] = useState<string | null>(null);
