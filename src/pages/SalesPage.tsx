@@ -1,9 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso } from '@/lib/format';
+import { toast } from 'sonner';
 
 interface Transaction {
   id: string;
@@ -18,7 +21,9 @@ const SalesPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -59,6 +64,32 @@ const SalesPage = () => {
   const todaySales = transactions.filter(t => t.created_at.slice(0, 10) === today);
   const todayTotal = todaySales.reduce((s, t) => s + t.total, 0);
   const todayProfit = todaySales.reduce((s, t) => s + t.profit, 0);
+
+  const handleDelete = async () => {
+    if (!deleteId || !user) return;
+    setDeleting(true);
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password,
+      });
+      if (authError) {
+        toast.error('Incorrect password');
+        setDeleting(false);
+        return;
+      }
+      // Delete items first, then transaction
+      await supabase.from('transaction_items').delete().eq('transaction_id', deleteId);
+      await supabase.from('transactions').delete().eq('id', deleteId);
+      setTransactions(prev => prev.filter(t => t.id !== deleteId));
+      toast.success('Transaction deleted');
+      setDeleteId(null);
+      setPassword('');
+    } catch {
+      toast.error('Failed to delete');
+    }
+    setDeleting(false);
+  };
 
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
@@ -108,7 +139,12 @@ const SalesPage = () => {
                 <Calendar className="w-3 h-3" />
                 {new Date(t.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </span>
-              <span className="text-sm font-extrabold text-primary">{peso(t.total)}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-extrabold text-primary">{peso(t.total)}</span>
+                <button onClick={() => setDeleteId(t.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
             <div className="text-xs text-muted-foreground">
               {t.items.map((item, i) => (
@@ -119,6 +155,28 @@ const SalesPage = () => {
           </div>
         ))}
       </div>
+
+      <Dialog open={!!deleteId} onOpenChange={open => { if (!open) { setDeleteId(null); setPassword(''); } }}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Enter your account password to delete this transaction.</p>
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleDelete()}
+          />
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setDeleteId(null); setPassword(''); }}>Cancel</Button>
+            <Button variant="destructive" size="sm" disabled={!password || deleting} onClick={handleDelete}>
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
