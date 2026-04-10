@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Calendar, Trash2, Pencil, Plus, Minus, X } from 'lucide-react';
+import { Calendar, Trash2, Pencil, Plus, Minus, X, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -42,6 +42,7 @@ const SalesPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Delete state
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -95,13 +96,15 @@ const SalesPage = () => {
   }, [user]);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return transactions.filter(t => {
       const d = toLocalDate(t.created_at);
       if (fromDate && d < fromDate) return false;
       if (toDate && d > toDate) return false;
+      if (q && !t.items.some(i => i.product_name.toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [transactions, fromDate, toDate]);
+  }, [transactions, fromDate, toDate, searchQuery]);
 
   const totalSales = filtered.reduce((s, t) => s + t.total, 0);
   const totalProfit = filtered.reduce((s, t) => s + t.profit, 0);
@@ -207,6 +210,16 @@ const SalesPage = () => {
           <p className="text-[10px] text-muted-foreground font-semibold">Today's Profit</p>
           <p className="text-lg font-extrabold text-success">{peso(todayProfit)}</p>
         </div>
+      </div>
+
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search product sold..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="h-9 text-sm pl-9"
+        />
       </div>
 
       <div className="flex gap-2 mb-3">
