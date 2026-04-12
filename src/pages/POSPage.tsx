@@ -33,7 +33,12 @@ const POSPage = () => {
   const loadProducts = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from('products').select('*').eq('user_id', user.id).gt('stock', 0);
-    setProducts((data || []).map(p => ({ ...p, buying_price: Number(p.buying_price), selling_price: Number(p.selling_price) })));
+    setProducts((data || []).map(p => ({
+      ...p,
+      stock: Number(p.stock),
+      buying_price: Number(p.buying_price),
+      selling_price: Number(p.selling_price),
+    })));
   }, [user]);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
@@ -57,7 +62,7 @@ const POSPage = () => {
   }, []);
 
   const updateQty = (id: string, delta: number) => {
-    setQtyInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
+    setQtyInputs(prev => { const next = { ...prev }; delete next[id]; return next; });
     setCart(prev => prev.map(c => {
       if (c.product.id !== id) return c;
       const newQty = Math.round((c.quantity + delta) * 100) / 100;
@@ -84,17 +89,19 @@ const POSPage = () => {
     return qtyInputs[id] !== undefined ? qtyInputs[id] : String(quantity);
   };
 
-  const handleQtyBlur = (id: string, quantity: number) => {
+  const handleQtyBlur = (id: string) => {
     const val = parseFloat(qtyInputs[id] || '');
+    setQtyInputs(prev => { const next = { ...prev }; delete next[id]; return next; });
+
     if (isNaN(val) || val <= 0) {
-      setQtyInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
       setCart(prev => prev.map(c => c.product.id === id ? { ...c, quantity: 1 } : c));
-    } else {
-      setQtyInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
     }
   };
 
-  const removeFromCart = (id: string) => setCart(prev => prev.filter(c => c.product.id !== id));
+  const removeFromCart = (id: string) => {
+    setQtyInputs(prev => { const next = { ...prev }; delete next[id]; return next; });
+    setCart(prev => prev.filter(c => c.product.id !== id));
+  };
 
   const paidNum = parseFloat(paid) || 0;
   const change = paidNum - total;
@@ -103,32 +110,23 @@ const POSPage = () => {
     if (!user || cart.length === 0 || paidNum < total) return;
     setProcessing(true);
     try {
-      const profit = cart.reduce((s, c) => s + (c.product.selling_price - c.product.buying_price) * c.quantity, 0);
-
-      const { data: txn, error: txnError } = await supabase.from('transactions').insert({
-        user_id: user.id, total, profit, paid: paidNum, change,
-      }).select('id').single();
-      if (txnError) throw txnError;
-
-      const items = cart.map(c => ({
-        transaction_id: txn.id,
-        product_name: c.product.name,
+      const saleItems = cart.map(c => ({
+        product_id: c.product.id,
         quantity: c.quantity,
-        price: c.product.selling_price,
-        cost: c.product.buying_price,
       }));
-      const { error: itemsError } = await supabase.from('transaction_items').insert(items);
-      if (itemsError) throw itemsError;
 
-      // Deduct stock
-      for (const c of cart) {
-        await supabase.from('products').update({ stock: c.product.stock - c.quantity }).eq('id', c.product.id);
-      }
+      const { error } = await supabase.rpc('process_pos_sale' as never, {
+        p_paid: paidNum,
+        p_items: saleItems,
+      } as never);
+
+      if (error) throw error;
 
       setReceipt({ items: cart, total, paid: paidNum, change });
       setCart([]);
+      setQtyInputs({});
       setPaid('');
-      loadProducts();
+      await loadProducts();
       toast.success('Sale completed!');
     } catch (err: any) {
       toast.error(err.message || 'Checkout failed');
