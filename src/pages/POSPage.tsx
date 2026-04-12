@@ -57,6 +57,7 @@ const POSPage = () => {
   }, []);
 
   const updateQty = (id: string, delta: number) => {
+    setQtyInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
     setCart(prev => prev.map(c => {
       if (c.product.id !== id) return c;
       const newQty = Math.round((c.quantity + delta) * 100) / 100;
