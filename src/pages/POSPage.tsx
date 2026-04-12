@@ -174,7 +174,7 @@ const POSPage = () => {
                     inputMode="decimal"
                     value={getQtyDisplay(c.product.id, c.quantity)}
                     onChange={e => setQty(c.product.id, e.target.value)}
-                    onBlur={() => handleQtyBlur(c.product.id, c.quantity)}
+                    onBlur={() => handleQtyBlur(c.product.id)}
                     className="w-14 text-center text-sm font-bold bg-background border border-border rounded-md h-7"
                   />
                   <button onClick={() => updateQty(c.product.id, 0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
