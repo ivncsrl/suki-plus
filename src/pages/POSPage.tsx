@@ -57,6 +57,7 @@ const POSPage = () => {
   }, []);
 
   const updateQty = (id: string, delta: number) => {
+    setQtyInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
     setCart(prev => prev.map(c => {
       if (c.product.id !== id) return c;
       const newQty = Math.round((c.quantity + delta) * 100) / 100;
@@ -65,13 +66,32 @@ const POSPage = () => {
     }));
   };
 
+  const [qtyInputs, setQtyInputs] = useState<Record<string, string>>({});
+
   const setQty = (id: string, value: string) => {
-    setCart(prev => prev.map(c => {
-      if (c.product.id !== id) return c;
-      const num = parseFloat(value);
-      if (isNaN(num) || num <= 0 || num > c.product.stock) return { ...c, quantity: parseFloat(value) || 0 };
-      return { ...c, quantity: num };
-    }));
+    setQtyInputs(prev => ({ ...prev, [id]: value }));
+    const num = parseFloat(value);
+    if (!isNaN(num) && num > 0) {
+      setCart(prev => prev.map(c => {
+        if (c.product.id !== id) return c;
+        if (num > c.product.stock) return c;
+        return { ...c, quantity: num };
+      }));
+    }
+  };
+
+  const getQtyDisplay = (id: string, quantity: number) => {
+    return qtyInputs[id] !== undefined ? qtyInputs[id] : String(quantity);
+  };
+
+  const handleQtyBlur = (id: string, quantity: number) => {
+    const val = parseFloat(qtyInputs[id] || '');
+    if (isNaN(val) || val <= 0) {
+      setQtyInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
+      setCart(prev => prev.map(c => c.product.id === id ? { ...c, quantity: 1 } : c));
+    } else {
+      setQtyInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
+    }
   };
 
   const removeFromCart = (id: string) => setCart(prev => prev.filter(c => c.product.id !== id));
@@ -152,12 +172,12 @@ const POSPage = () => {
                 <div className="flex items-center gap-1">
                   <button onClick={() => updateQty(c.product.id, -0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
                   <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    step="0.25"
-                    value={c.quantity}
+                    value={getQtyDisplay(c.product.id, c.quantity)}
                     onChange={e => setQty(c.product.id, e.target.value)}
-                    className="w-14 text-center text-sm font-bold bg-background border border-border rounded-md h-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    onBlur={() => handleQtyBlur(c.product.id, c.quantity)}
+                    className="w-14 text-center text-sm font-bold bg-background border border-border rounded-md h-7"
                   />
                   <button onClick={() => updateQty(c.product.id, 0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
                 </div>
