@@ -65,13 +65,32 @@ const POSPage = () => {
     }));
   };
 
+  const [qtyInputs, setQtyInputs] = useState<Record<string, string>>({});
+
   const setQty = (id: string, value: string) => {
-    setCart(prev => prev.map(c => {
-      if (c.product.id !== id) return c;
-      const num = parseFloat(value);
-      if (isNaN(num) || num <= 0 || num > c.product.stock) return { ...c, quantity: parseFloat(value) || 0 };
-      return { ...c, quantity: num };
-    }));
+    setQtyInputs(prev => ({ ...prev, [id]: value }));
+    const num = parseFloat(value);
+    if (!isNaN(num) && num > 0) {
+      setCart(prev => prev.map(c => {
+        if (c.product.id !== id) return c;
+        if (num > c.product.stock) return c;
+        return { ...c, quantity: num };
+      }));
+    }
+  };
+
+  const getQtyDisplay = (id: string, quantity: number) => {
+    return qtyInputs[id] !== undefined ? qtyInputs[id] : String(quantity);
+  };
+
+  const handleQtyBlur = (id: string, quantity: number) => {
+    const val = parseFloat(qtyInputs[id] || '');
+    if (isNaN(val) || val <= 0) {
+      setQtyInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
+      setCart(prev => prev.map(c => c.product.id === id ? { ...c, quantity: 1 } : c));
+    } else {
+      setQtyInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
+    }
   };
 
   const removeFromCart = (id: string) => setCart(prev => prev.filter(c => c.product.id !== id));
