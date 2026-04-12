@@ -171,12 +171,13 @@ const POSPage = () => {
                 <div className="flex items-center gap-1">
                   <button onClick={() => updateQty(c.product.id, -0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
                   <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    step="0.25"
-                    value={c.quantity}
+                    value={getQtyDisplay(c.product.id, c.quantity)}
                     onChange={e => setQty(c.product.id, e.target.value)}
-                    className="w-14 text-center text-sm font-bold bg-background border border-border rounded-md h-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    onBlur={() => handleQtyBlur(c.product.id, c.quantity)}
+                    className="w-14 text-center text-sm font-bold bg-background border border-border rounded-md h-7"
+                  />
                   />
                   <button onClick={() => updateQty(c.product.id, 0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
                 </div>
