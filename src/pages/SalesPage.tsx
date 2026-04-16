@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { peso } from '@/lib/format';
+import { peso, getBusinessDate, getTodayBusinessDate } from '@/lib/format';
 import { toast } from 'sonner';
 
 interface TransactionItem {
@@ -26,7 +26,7 @@ interface Transaction {
   items: TransactionItem[];
 }
 
-/** Get today's date string in local timezone (YYYY-MM-DD) */
+/** Get date string in local timezone (YYYY-MM-DD) */
 const getLocalDateStr = (date: Date = new Date()) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -34,8 +34,8 @@ const getLocalDateStr = (date: Date = new Date()) => {
   return `${y}-${m}-${d}`;
 };
 
-/** Convert a UTC timestamp to local date string */
-const toLocalDate = (utc: string) => getLocalDateStr(new Date(utc));
+/** Convert a UTC timestamp to its business date (3 AM boundary) */
+const toBusinessDate = (utc: string) => getBusinessDate(utc);
 
 const SalesPage = () => {
   const { user } = useAuth();
@@ -98,7 +98,7 @@ const SalesPage = () => {
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     return transactions.filter(t => {
-      const d = toLocalDate(t.created_at);
+      const d = toBusinessDate(t.created_at);
       if (fromDate && d < fromDate) return false;
       if (toDate && d > toDate) return false;
       if (q && !t.items.some(i => i.product_name.toLowerCase().includes(q))) return false;
@@ -109,8 +109,8 @@ const SalesPage = () => {
   const totalSales = filtered.reduce((s, t) => s + t.total, 0);
   const totalProfit = filtered.reduce((s, t) => s + t.profit, 0);
 
-  const today = getLocalDateStr();
-  const todaySales = transactions.filter(t => toLocalDate(t.created_at) === today);
+  const today = getTodayBusinessDate();
+  const todaySales = transactions.filter(t => toBusinessDate(t.created_at) === today);
   const todayTotal = todaySales.reduce((s, t) => s + t.total, 0);
   const todayProfit = todaySales.reduce((s, t) => s + t.profit, 0);
 
