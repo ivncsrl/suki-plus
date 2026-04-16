@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { peso } from '@/lib/format';
+import { peso, getBusinessDayStart } from '@/lib/format';
 import { ShoppingCart, Package, TrendingUp, AlertTriangle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -27,12 +27,12 @@ const DashboardPage = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const businessDayStart = getBusinessDayStart();
 
       const [profileRes, productsRes, txnRes] = await Promise.all([
         supabase.from('profiles').select('store_name').eq('user_id', user.id).single(),
         supabase.from('products').select('id, name, stock').eq('user_id', user.id),
-        supabase.from('transactions').select('total, profit').eq('user_id', user.id).gte('created_at', today + 'T00:00:00').lte('created_at', today + 'T23:59:59'),
+        supabase.from('transactions').select('total, profit').eq('user_id', user.id).gte('created_at', businessDayStart),
       ]);
 
       const products = productsRes.data || [];
