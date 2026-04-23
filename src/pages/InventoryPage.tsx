@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
