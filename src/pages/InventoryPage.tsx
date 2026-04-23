@@ -55,6 +55,7 @@ const InventoryPage = () => {
   const [bulkMoveTarget, setBulkMoveTarget] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [recentlyDeleted, setRecentlyDeleted] = useState<Product | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
