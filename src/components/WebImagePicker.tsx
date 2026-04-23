@@ -81,7 +81,7 @@ const WebImagePicker = ({ open, onOpenChange, initialQuery, onPicked }: Props) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl z-[60]" overlayClassName="z-[60]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Globe className="w-4 h-4" /> Search Web for Image
