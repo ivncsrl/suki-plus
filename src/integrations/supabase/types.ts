@@ -78,8 +78,10 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          price_updated_at: string | null
           selling_price: number
           stock: number
+          stock_updated_at: string | null
           updated_at: string
           user_id: string
         }
@@ -89,8 +91,10 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          price_updated_at?: string | null
           selling_price?: number
           stock?: number
+          stock_updated_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -100,8 +104,10 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          price_updated_at?: string | null
           selling_price?: number
           stock?: number
+          stock_updated_at?: string | null
           updated_at?: string
           user_id?: string
         }
