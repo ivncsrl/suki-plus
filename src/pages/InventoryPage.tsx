@@ -413,10 +413,10 @@ const InventoryPage = () => {
                         <h3 className="font-bold text-sm truncate">{p.name}</h3>
                         {p.stock <= LOW_STOCK && <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />}
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate">
-                        {p.brand && <span className="font-semibold">{p.brand}</span>}
-                        {p.brand && p.category && <span> · </span>}
-                        {p.category}
+                      <p className="text-xs truncate mt-0.5">
+                        {p.brand && <span className="font-semibold text-foreground">{p.brand}</span>}
+                        {p.brand && p.category && <span className="text-muted-foreground"> · </span>}
+                        {p.category && <span className="text-muted-foreground">{p.category}</span>}
                       </p>
                     </div>
                   </div>

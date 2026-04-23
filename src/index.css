@@ -2,42 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
-    --background: 36 50% 97%;
-    --foreground: 25 30% 14%;
+    /* Wise-inspired: soft off-white surface, deep navy ink, vivid lime primary */
+    --background: 60 9% 98%;
+    --foreground: 75 11% 5%;
 
-    --card: 38 60% 96%;
-    --card-foreground: 25 30% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 75 11% 5%;
 
-    --popover: 36 50% 97%;
-    --popover-foreground: 25 30% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 75 11% 5%;
 
-    --primary: 28 85% 56%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 92 75% 67%;
+    --primary-foreground: 75 11% 5%;
 
-    --secondary: 42 70% 88%;
-    --secondary-foreground: 25 40% 20%;
+    --secondary: 75 11% 95%;
+    --secondary-foreground: 75 11% 5%;
 
-    --muted: 38 30% 92%;
-    --muted-foreground: 25 15% 48%;
+    --muted: 75 11% 95%;
+    --muted-foreground: 75 6% 40%;
 
-    --accent: 45 90% 65%;
-    --accent-foreground: 25 40% 16%;
+    --accent: 92 75% 67%;
+    --accent-foreground: 75 11% 5%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 60% 40%;
+    --success: 152 60% 36%;
     --success-foreground: 0 0% 100%;
 
-    --border: 30 25% 86%;
-    --input: 30 25% 86%;
-    --ring: 28 85% 56%;
+    --border: 75 8% 90%;
+    --input: 75 8% 90%;
+    --ring: 92 75% 67%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -59,8 +60,13 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Inter', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.01em;
     -webkit-tap-highlight-color: transparent;
+  }
+  h1, h2, h3, h4 {
+    letter-spacing: -0.025em;
   }
 }
 
