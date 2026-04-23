@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +20,24 @@ interface Product {
   stock: number;
   buying_price: number;
   selling_price: number;
+  price_updated_at: string | null;
+  stock_updated_at: string | null;
+  created_at: string;
 }
+
+const formatRelative = (dateStr: string | null) => {
+  if (!dateStr) return 'Never';
+  const d = new Date(dateStr);
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return d.toLocaleDateString();
+};
 
 const InventoryPage = () => {
   const { user } = useAuth();
@@ -38,6 +55,7 @@ const InventoryPage = () => {
   const [bulkMoveTarget, setBulkMoveTarget] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [recentlyDeleted, setRecentlyDeleted] = useState<Product | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -250,44 +268,73 @@ const InventoryPage = () => {
       <div className="space-y-2">
         {products.length === 0 && <p className="text-center text-muted-foreground py-8">No products yet. Tap "Add" to start!</p>}
         {filtered.length === 0 && products.length > 0 && <p className="text-center text-muted-foreground py-4">No matching products</p>}
-        {filtered.map(p => (
-          <div key={p.id} className="flex items-start gap-2">
-            <div className={`flex-1 bg-card rounded-xl border p-3 ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''}`}>
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(p.id)}
-                    onChange={() => toggleSelect(p.id)}
-                    className="w-4 h-4 rounded border-border accent-primary shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-bold text-sm truncate">{p.name}</h3>
-                      {p.stock <= LOW_STOCK && <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />}
+        {filtered.map(p => {
+          const isExpanded = expandedId === p.id;
+          return (
+            <div key={p.id} className={`bg-card rounded-xl border ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} overflow-hidden`}>
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? null : p.id)}
+                className="w-full p-3 text-left active:bg-muted/30 transition-colors"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(p.id)}
+                      onChange={() => toggleSelect(p.id)}
+                      onClick={e => e.stopPropagation()}
+                      className="w-4 h-4 rounded border-border accent-primary shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-bold text-sm truncate">{p.name}</h3>
+                        {p.stock <= LOW_STOCK && <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />}
+                      </div>
+                      {p.category && <p className="text-[10px] text-muted-foreground">{p.category}</p>}
                     </div>
-                    {p.category && <p className="text-[10px] text-muted-foreground">{p.category}</p>}
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </div>
+                <div className="grid grid-cols-4 gap-1 mt-2 text-[11px]">
+                  <div><span className="text-muted-foreground">Stock:</span> <span className="font-bold">{p.stock}</span></div>
+                  <div><span className="text-muted-foreground">Buy:</span> <span className="font-bold">{peso(p.buying_price)}</span></div>
+                  <div><span className="text-muted-foreground">Sell:</span> <span className="font-bold">{peso(p.selling_price)}</span></div>
+                  <div><span className="text-muted-foreground">Profit:</span> <span className="font-bold text-success">{peso(p.selling_price - p.buying_price)}</span></div>
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="border-t border-border bg-muted/20 px-3 py-2.5 space-y-2 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="flex items-start gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-muted-foreground">Price changed</p>
+                        <p className="font-semibold">{formatRelative(p.price_updated_at)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <PackagePlus className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-muted-foreground">Last restocked</p>
+                        <p className="font-semibold">{formatRelative(p.stock_updated_at)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => startEdit(p)}>
+                      <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
+                    </Button>
+                    <Button size="sm" variant="destructive" className="flex-1 h-9" onClick={() => setDeleteTarget(p)}>
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
+                    </Button>
                   </div>
                 </div>
-                <button onClick={() => startEdit(p)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90 ml-2">
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="grid grid-cols-4 gap-1 mt-2 text-[11px]">
-                <div><span className="text-muted-foreground">Stock:</span> <span className="font-bold">{p.stock}</span></div>
-                <div><span className="text-muted-foreground">Buy:</span> <span className="font-bold">{peso(p.buying_price)}</span></div>
-                <div><span className="text-muted-foreground">Sell:</span> <span className="font-bold">{peso(p.selling_price)}</span></div>
-                <div><span className="text-muted-foreground">Profit:</span> <span className="font-bold text-success">{peso(p.selling_price - p.buying_price)}</span></div>
-              </div>
+              )}
             </div>
-            <button
-              onClick={() => setDeleteTarget(p)}
-              className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center active:scale-90 text-destructive shrink-0 mt-2"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {showForm && (
