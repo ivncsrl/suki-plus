@@ -589,6 +589,13 @@ const InventoryPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <WebImagePicker
+        open={showWebPicker}
+        onOpenChange={setShowWebPicker}
+        initialQuery={[form.name, form.brand].filter(Boolean).join(' ').trim()}
+        onPicked={(url) => setForm(f => ({ ...f, imageUrl: url }))}
+      />
     </div>
   );
 };
