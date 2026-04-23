@@ -466,20 +466,31 @@ const InventoryPage = () => {
                   )}
                 </div>
                 <div className="flex-1 space-y-1.5">
-                  <label className="block">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
-                    />
-                    <Button asChild size="sm" variant="outline" className="w-full" disabled={uploadingImage}>
-                      <span className="cursor-pointer">
-                        {uploadingImage ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <ImagePlus className="w-4 h-4 mr-1.5" />}
-                        {form.imageUrl ? 'Change image' : 'Upload image'}
-                      </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <label className="block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
+                      />
+                      <Button asChild size="sm" variant="outline" className="w-full" disabled={uploadingImage}>
+                        <span className="cursor-pointer">
+                          {uploadingImage ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <ImagePlus className="w-4 h-4 mr-1.5" />}
+                          Upload
+                        </span>
+                      </Button>
+                    </label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowWebPicker(true)}
+                    >
+                      <Globe className="w-4 h-4 mr-1.5" /> Search web
                     </Button>
-                  </label>
+                  </div>
                   {form.imageUrl && (
                     <Button size="sm" variant="ghost" className="w-full h-8 text-destructive" onClick={() => setForm({ ...form, imageUrl: '' })}>
                       Remove image
