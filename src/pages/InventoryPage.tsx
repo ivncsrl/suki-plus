@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus, ImagePlus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,17 +11,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const LOW_STOCK = 5;
-const emptyForm = { name: '', category: '', stock: '', buyingPrice: '', sellingPrice: '' };
+const emptyForm = { name: '', brand: '', category: '', stock: '', buyingPrice: '', sellingPrice: '', imageUrl: '' };
 
 interface Product {
   id: string;
   name: string;
+  brand: string | null;
   category: string | null;
   stock: number;
   buying_price: number;
   selling_price: number;
+  image_url: string | null;
   price_updated_at: string | null;
   stock_updated_at: string | null;
+  created_at: string;
+}
+
+interface HistoryEntry {
+  id: string;
+  product_id: string;
+  change_type: 'price' | 'restock';
+  old_buying_price: number | null;
+  new_buying_price: number | null;
+  old_selling_price: number | null;
+  new_selling_price: number | null;
+  old_stock: number | null;
+  new_stock: number | null;
   created_at: string;
 }
 
@@ -54,16 +69,31 @@ const InventoryPage = () => {
   const [showBulkMove, setShowBulkMove] = useState(false);
   const [bulkMoveTarget, setBulkMoveTarget] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
-  const [recentlyDeleted, setRecentlyDeleted] = useState<Product | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [historyByProduct, setHistoryByProduct] = useState<Record<string, HistoryEntry[]>>({});
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from('products').select('*').eq('user_id', user.id).order('name');
-    setProducts((data || []).map(p => ({ ...p, buying_price: Number(p.buying_price), selling_price: Number(p.selling_price) })));
+    setProducts((data || []).map(p => ({ ...p, buying_price: Number(p.buying_price), selling_price: Number(p.selling_price), stock: Number(p.stock) })) as Product[]);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Lazy-load history when expanding
+  useEffect(() => {
+    if (!expandedId || !user || historyByProduct[expandedId]) return;
+    (async () => {
+      const { data } = await supabase
+        .from('product_history')
+        .select('*')
+        .eq('product_id', expandedId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      setHistoryByProduct(prev => ({ ...prev, [expandedId]: (data as HistoryEntry[]) || [] }));
+    })();
+  }, [expandedId, user, historyByProduct]);
 
   const categories = useMemo(() => {
     const cats = products.map(p => p.category).filter((c): c is string => !!c && c.trim() !== '');
@@ -79,7 +109,11 @@ const InventoryPage = () => {
     }
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter(p => p.name.toLowerCase().includes(q) || (p.category && p.category.toLowerCase().includes(q)));
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        (p.brand && p.brand.toLowerCase().includes(q)) ||
+        (p.category && p.category.toLowerCase().includes(q))
+      );
     }
     return result;
   }, [products, search, categoryFilter]);
@@ -88,25 +122,45 @@ const InventoryPage = () => {
   const totalRevenue = products.reduce((s, p) => s + p.selling_price * p.stock, 0);
   const totalProfit = totalRevenue - totalValue;
 
+  const handleImageUpload = async (file: File) => {
+    if (!user) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+    setUploadingImage(true);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false });
+      if (error) throw error;
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+      setForm(f => ({ ...f, imageUrl: data.publicUrl }));
+      toast.success('Image uploaded');
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!user || !form.name.trim()) return;
     try {
+      const payload = {
+        name: form.name.trim(),
+        brand: form.brand.trim() || null,
+        category: form.category.trim(),
+        stock: parseFloat(form.stock) || 0,
+        buying_price: parseFloat(form.buyingPrice) || 0,
+        selling_price: parseFloat(form.sellingPrice) || 0,
+        image_url: form.imageUrl || null,
+      };
       if (editId) {
-        const { error } = await supabase.from('products').update({
-          name: form.name.trim(), category: form.category.trim(),
-          stock: parseInt(form.stock) || 0,
-          buying_price: parseFloat(form.buyingPrice) || 0,
-          selling_price: parseFloat(form.sellingPrice) || 0,
-        }).eq('id', editId);
+        const { error } = await supabase.from('products').update(payload).eq('id', editId);
         if (error) throw error;
+        // Invalidate cached history so next expand re-fetches
+        setHistoryByProduct(prev => { const n = { ...prev }; delete n[editId]; return n; });
         toast.success('Product updated');
       } else {
-        const { error } = await supabase.from('products').insert({
-          user_id: user.id, name: form.name.trim(), category: form.category.trim(),
-          stock: parseInt(form.stock) || 0,
-          buying_price: parseFloat(form.buyingPrice) || 0,
-          selling_price: parseFloat(form.sellingPrice) || 0,
-        });
+        const { error } = await supabase.from('products').insert({ user_id: user.id, ...payload });
         if (error) throw error;
         toast.success('Product added');
       }
@@ -117,7 +171,15 @@ const InventoryPage = () => {
   };
 
   const startEdit = (p: Product) => {
-    setForm({ name: p.name, category: p.category || '', stock: String(p.stock), buyingPrice: String(p.buying_price), sellingPrice: String(p.selling_price) });
+    setForm({
+      name: p.name,
+      brand: p.brand || '',
+      category: p.category || '',
+      stock: String(p.stock),
+      buyingPrice: String(p.buying_price),
+      sellingPrice: String(p.selling_price),
+      imageUrl: p.image_url || '',
+    });
     setEditId(p.id); setShowForm(true);
   };
 
@@ -126,7 +188,6 @@ const InventoryPage = () => {
     const product = deleteTarget;
     setDeleteTarget(null);
     await supabase.from('products').delete().eq('id', product.id);
-    setRecentlyDeleted(product);
     load();
     toast.success(`"${product.name}" deleted`, {
       action: {
@@ -135,12 +196,13 @@ const InventoryPage = () => {
           await supabase.from('products').insert({
             user_id: user.id,
             name: product.name,
+            brand: product.brand,
             category: product.category || '',
             stock: product.stock,
             buying_price: product.buying_price,
             selling_price: product.selling_price,
+            image_url: product.image_url,
           });
-          setRecentlyDeleted(null);
           load();
           toast.success(`"${product.name}" restored`);
         },
@@ -174,11 +236,8 @@ const InventoryPage = () => {
   };
 
   const selectAll = () => {
-    if (selectedIds.size === filtered.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filtered.map(p => p.id)));
-    }
+    if (selectedIds.size === filtered.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(filtered.map(p => p.id)));
   };
 
   const handleBulkMove = async () => {
@@ -194,6 +253,60 @@ const InventoryPage = () => {
   };
 
   const isSelecting = selectedIds.size > 0;
+
+  const renderHistory = (productId: string) => {
+    const entries = historyByProduct[productId];
+    if (!entries) return <p className="text-[11px] text-muted-foreground italic">Loading history...</p>;
+    const priceChanges = entries.filter(e => e.change_type === 'price');
+    const restocks = entries.filter(e => e.change_type === 'restock');
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+            <p className="font-semibold text-foreground">Price Changes</p>
+          </div>
+          {priceChanges.length === 0 ? (
+            <p className="text-muted-foreground italic pl-5">No changes yet</p>
+          ) : (
+            <ul className="space-y-1 pl-5 list-disc marker:text-muted-foreground">
+              {priceChanges.slice(0, 5).map(e => (
+                <li key={e.id}>
+                  <span className="text-muted-foreground">{formatRelative(e.created_at)}: </span>
+                  {e.old_selling_price !== e.new_selling_price && (
+                    <span>Sell {peso(Number(e.old_selling_price))} → <span className="font-semibold">{peso(Number(e.new_selling_price))}</span></span>
+                  )}
+                  {e.old_selling_price !== e.new_selling_price && e.old_buying_price !== e.new_buying_price && <span>, </span>}
+                  {e.old_buying_price !== e.new_buying_price && (
+                    <span>Buy {peso(Number(e.old_buying_price))} → <span className="font-semibold">{peso(Number(e.new_buying_price))}</span></span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <PackagePlus className="w-3.5 h-3.5 text-muted-foreground" />
+            <p className="font-semibold text-foreground">Restocks</p>
+          </div>
+          {restocks.length === 0 ? (
+            <p className="text-muted-foreground italic pl-5">No restocks yet</p>
+          ) : (
+            <ul className="space-y-1 pl-5 list-disc marker:text-muted-foreground">
+              {restocks.slice(0, 5).map(e => (
+                <li key={e.id}>
+                  <span className="text-muted-foreground">{formatRelative(e.created_at)}: </span>
+                  <span className="font-semibold">+{Number(e.new_stock) - Number(e.old_stock)}</span>
+                  <span className="text-muted-foreground"> ({Number(e.old_stock)} → {Number(e.new_stock)})</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
@@ -286,12 +399,23 @@ const InventoryPage = () => {
                       onClick={e => e.stopPropagation()}
                       className="w-4 h-4 rounded border-border accent-primary shrink-0"
                     />
+                    {p.image_url ? (
+                      <img src={p.image_url} alt={p.name} className="w-10 h-10 rounded-md object-cover border border-border shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0">
+                        <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <h3 className="font-bold text-sm truncate">{p.name}</h3>
                         {p.stock <= LOW_STOCK && <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />}
                       </div>
-                      {p.category && <p className="text-[10px] text-muted-foreground">{p.category}</p>}
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {p.brand && <span className="font-semibold">{p.brand}</span>}
+                        {p.brand && p.category && <span> · </span>}
+                        {p.category}
+                      </p>
                     </div>
                   </div>
                   <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -305,23 +429,8 @@ const InventoryPage = () => {
               </button>
 
               {isExpanded && (
-                <div className="border-t border-border bg-muted/20 px-3 py-2.5 space-y-2 animate-fade-in">
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="flex items-start gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-muted-foreground">Price changed</p>
-                        <p className="font-semibold">{formatRelative(p.price_updated_at)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-1.5">
-                      <PackagePlus className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-muted-foreground">Last restocked</p>
-                        <p className="font-semibold">{formatRelative(p.stock_updated_at)}</p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="border-t border-border bg-muted/20 px-3 py-2.5 space-y-3 animate-fade-in">
+                  {renderHistory(p.id)}
                   <div className="flex gap-2 pt-1">
                     <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => startEdit(p)}>
                       <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
@@ -339,16 +448,49 @@ const InventoryPage = () => {
 
       {showForm && (
         <div className="fixed inset-0 z-[60] bg-foreground/40 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-background rounded-2xl p-5 w-full max-w-lg animate-fade-in shadow-xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-background rounded-2xl p-5 w-full max-w-lg animate-fade-in shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-extrabold text-lg">{editId ? 'Edit Product' : 'New Product'}</h3>
               <button onClick={() => setShowForm(false)}><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-3">
+              {/* Image uploader */}
+              <div className="flex items-center gap-3">
+                <div className="w-20 h-20 rounded-lg border border-border bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                  {form.imageUrl ? (
+                    <img src={form.imageUrl} alt="Product" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImagePlus className="w-6 h-6 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
+                    />
+                    <Button asChild size="sm" variant="outline" className="w-full" disabled={uploadingImage}>
+                      <span className="cursor-pointer">
+                        {uploadingImage ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <ImagePlus className="w-4 h-4 mr-1.5" />}
+                        {form.imageUrl ? 'Change image' : 'Upload image'}
+                      </span>
+                    </Button>
+                  </label>
+                  {form.imageUrl && (
+                    <Button size="sm" variant="ghost" className="w-full h-8 text-destructive" onClick={() => setForm({ ...form, imageUrl: '' })}>
+                      Remove image
+                    </Button>
+                  )}
+                </div>
+              </div>
+
               <Input placeholder="Product name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-11" />
+              <Input placeholder="Brand (optional)" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="h-11" />
               <CategoryCombobox value={form.category} onChange={val => setForm({ ...form, category: val })} categories={categories} />
               <div className="grid grid-cols-3 gap-2">
-                <Input type="number" inputMode="numeric" placeholder="Stock" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
+                <Input type="number" inputMode="decimal" placeholder="Stock" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Buy price" value={form.buyingPrice} onChange={e => setForm({ ...form, buyingPrice: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Sell price" value={form.sellingPrice} onChange={e => setForm({ ...form, sellingPrice: e.target.value })} className="h-11" />
               </div>
