@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus, ImagePlus, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus, ImagePlus, Loader2, Globe } from 'lucide-react';
+import WebImagePicker from '@/components/WebImagePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,6 +73,7 @@ const InventoryPage = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [historyByProduct, setHistoryByProduct] = useState<Record<string, HistoryEntry[]>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showWebPicker, setShowWebPicker] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -464,20 +466,31 @@ const InventoryPage = () => {
                   )}
                 </div>
                 <div className="flex-1 space-y-1.5">
-                  <label className="block">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
-                    />
-                    <Button asChild size="sm" variant="outline" className="w-full" disabled={uploadingImage}>
-                      <span className="cursor-pointer">
-                        {uploadingImage ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <ImagePlus className="w-4 h-4 mr-1.5" />}
-                        {form.imageUrl ? 'Change image' : 'Upload image'}
-                      </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <label className="block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
+                      />
+                      <Button asChild size="sm" variant="outline" className="w-full" disabled={uploadingImage}>
+                        <span className="cursor-pointer">
+                          {uploadingImage ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <ImagePlus className="w-4 h-4 mr-1.5" />}
+                          Upload
+                        </span>
+                      </Button>
+                    </label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowWebPicker(true)}
+                    >
+                      <Globe className="w-4 h-4 mr-1.5" /> Search web
                     </Button>
-                  </label>
+                  </div>
                   {form.imageUrl && (
                     <Button size="sm" variant="ghost" className="w-full h-8 text-destructive" onClick={() => setForm({ ...form, imageUrl: '' })}>
                       Remove image
@@ -576,6 +589,13 @@ const InventoryPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <WebImagePicker
+        open={showWebPicker}
+        onOpenChange={setShowWebPicker}
+        initialQuery={[form.name, form.brand].filter(Boolean).join(' ').trim()}
+        onPicked={(url) => setForm(f => ({ ...f, imageUrl: url }))}
+      />
     </div>
   );
 };
