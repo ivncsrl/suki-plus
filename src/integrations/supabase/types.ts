@@ -71,12 +71,64 @@ export type Database = {
         }
         Relationships: []
       }
+      product_history: {
+        Row: {
+          change_type: string
+          created_at: string
+          id: string
+          new_buying_price: number | null
+          new_selling_price: number | null
+          new_stock: number | null
+          old_buying_price: number | null
+          old_selling_price: number | null
+          old_stock: number | null
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          change_type: string
+          created_at?: string
+          id?: string
+          new_buying_price?: number | null
+          new_selling_price?: number | null
+          new_stock?: number | null
+          old_buying_price?: number | null
+          old_selling_price?: number | null
+          old_stock?: number | null
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          change_type?: string
+          created_at?: string
+          id?: string
+          new_buying_price?: number | null
+          new_selling_price?: number | null
+          new_stock?: number | null
+          old_buying_price?: number | null
+          old_selling_price?: number | null
+          old_stock?: number | null
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
+          brand: string | null
           buying_price: number
           category: string | null
           created_at: string
           id: string
+          image_url: string | null
           name: string
           price_updated_at: string | null
           selling_price: number
@@ -86,10 +138,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          brand?: string | null
           buying_price?: number
           category?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           name: string
           price_updated_at?: string | null
           selling_price?: number
@@ -99,10 +153,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          brand?: string | null
           buying_price?: number
           category?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           name?: string
           price_updated_at?: string | null
           selling_price?: number
