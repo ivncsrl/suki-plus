@@ -20,7 +20,24 @@ interface Product {
   stock: number;
   buying_price: number;
   selling_price: number;
+  price_updated_at: string | null;
+  stock_updated_at: string | null;
+  created_at: string;
 }
+
+const formatRelative = (dateStr: string | null) => {
+  if (!dateStr) return 'Never';
+  const d = new Date(dateStr);
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return d.toLocaleDateString();
+};
 
 const InventoryPage = () => {
   const { user } = useAuth();
