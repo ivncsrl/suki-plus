@@ -64,23 +64,28 @@ const SalesPage = () => {
 
   const loadTransactions = useCallback(async () => {
     if (!user) return;
-    const { data: txns } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-    if (!txns) return;
+    // Single nested query: avoids the 1000-row default cap on a separate
+    // transaction_items fetch (which previously caused older transactions
+    // to render with no items in the Sales Summary).
+    const { data: txns, error } = await supabase
+      .from('transactions')
+      .select('id, total, profit, paid, created_at, transaction_items(id, product_name, quantity, price, cost)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-    const txnIds = txns.map(t => t.id);
-    const { data: items } = await supabase.from('transaction_items').select('*').in('transaction_id', txnIds);
+    if (error || !txns) return;
 
-    setTransactions(txns.map(t => ({
+    setTransactions(txns.map((t: any) => ({
       id: t.id,
       total: Number(t.total),
       profit: Number(t.profit),
       paid: Number(t.paid),
-      change: Number(t.change),
+      change: Number(t.paid) - Number(t.total),
       created_at: t.created_at,
-      items: (items || []).filter(i => i.transaction_id === t.id).map(i => ({
+      items: (t.transaction_items || []).map((i: any) => ({
         id: i.id,
         product_name: i.product_name,
-        quantity: i.quantity,
+        quantity: Number(i.quantity),
         price: Number(i.price),
         cost: Number(i.cost),
       })),

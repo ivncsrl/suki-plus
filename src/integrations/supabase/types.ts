@@ -233,7 +233,6 @@ export type Database = {
       }
       transactions: {
         Row: {
-          change: number
           created_at: string
           id: string
           paid: number
@@ -242,7 +241,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          change?: number
           created_at?: string
           id?: string
           paid?: number
@@ -251,7 +249,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          change?: number
           created_at?: string
           id?: string
           paid?: number
