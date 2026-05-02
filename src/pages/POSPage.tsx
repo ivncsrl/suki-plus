@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Search, Plus, Minus, Trash2, CheckCircle, X } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CheckCircle, X, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,10 +10,12 @@ import { toast } from 'sonner';
 interface Product {
   id: string;
   name: string;
-  category: string;
+  brand: string | null;
+  category: string | null;
   stock: number;
   buying_price: number;
   selling_price: number;
+  image_url: string | null;
 }
 
 interface CartItem {
@@ -29,24 +31,34 @@ const POSPage = () => {
   const [paid, setPaid] = useState('');
   const [receipt, setReceipt] = useState<{ items: CartItem[]; total: number; paid: number; change: number } | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [qtyInputs, setQtyInputs] = useState<Record<string, string>>({});
 
   const loadProducts = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from('products').select('*').eq('user_id', user.id).gt('stock', 0);
     setProducts((data || []).map(p => ({
-      ...p,
+      id: p.id,
+      name: p.name,
+      brand: p.brand,
+      category: p.category,
       stock: Number(p.stock),
       buying_price: Number(p.buying_price),
       selling_price: Number(p.selling_price),
+      image_url: p.image_url,
     })));
   }, [user]);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
-  const filtered = useMemo(
-    () => products.filter(p => p.name.toLowerCase().includes(search.toLowerCase())),
-    [products, search]
-  );
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return products;
+    return products.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.brand?.toLowerCase().includes(q) ?? false) ||
+      (p.category?.toLowerCase().includes(q) ?? false)
+    );
+  }, [products, search]);
 
   const total = useMemo(() => cart.reduce((s, c) => s + c.product.selling_price * c.quantity, 0), [cart]);
 
@@ -71,8 +83,6 @@ const POSPage = () => {
     }));
   };
 
-  const [qtyInputs, setQtyInputs] = useState<Record<string, string>>({});
-
   const setQty = (id: string, value: string) => {
     setQtyInputs(prev => ({ ...prev, [id]: value }));
     const num = parseFloat(value);
@@ -85,14 +95,12 @@ const POSPage = () => {
     }
   };
 
-  const getQtyDisplay = (id: string, quantity: number) => {
-    return qtyInputs[id] !== undefined ? qtyInputs[id] : String(quantity);
-  };
+  const getQtyDisplay = (id: string, quantity: number) =>
+    qtyInputs[id] !== undefined ? qtyInputs[id] : String(quantity);
 
   const handleQtyBlur = (id: string) => {
     const val = parseFloat(qtyInputs[id] || '');
     setQtyInputs(prev => { const next = { ...prev }; delete next[id]; return next; });
-
     if (isNaN(val) || val <= 0) {
       setCart(prev => prev.map(c => c.product.id === id ? { ...c, quantity: 1 } : c));
     }
@@ -110,16 +118,11 @@ const POSPage = () => {
     if (!user || cart.length === 0 || paidNum < total) return;
     setProcessing(true);
     try {
-      const saleItems = cart.map(c => ({
-        product_id: c.product.id,
-        quantity: c.quantity,
-      }));
-
+      const saleItems = cart.map(c => ({ product_id: c.product.id, quantity: c.quantity }));
       const { error } = await supabase.rpc('process_pos_sale' as never, {
         p_paid: paidNum,
         p_items: saleItems,
       } as never);
-
       if (error) throw error;
 
       setReceipt({ items: cart, total, paid: paidNum, change });
@@ -136,75 +139,110 @@ const POSPage = () => {
   };
 
   return (
-    <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
-      <h1 className="text-xl font-extrabold mb-3">🛒 Point of Sale</h1>
+    <div className="pb-24 max-w-6xl mx-auto px-4 pt-4 animate-fade-in">
+      <h1 className="text-2xl font-extrabold mb-4 tracking-tight">🛒 Point of Sale</h1>
 
-      <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-11 bg-card" />
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 mb-4 max-h-44 overflow-y-auto">
-        {filtered.map(p => (
-          <button key={p.id} onClick={() => addToCart(p)} className="bg-card rounded-lg p-2 text-center border border-border hover:border-primary active:scale-95 transition-all">
-            <p className="text-xs font-bold truncate">{p.name}</p>
-            <p className="text-primary font-extrabold text-sm">{peso(p.selling_price)}</p>
-            <p className="text-[10px] text-muted-foreground">Stock: {p.stock}</p>
-          </button>
-        ))}
-        {filtered.length === 0 && <p className="col-span-3 text-center text-muted-foreground text-sm py-4">{products.length === 0 ? 'Add products in Inventory first' : 'No products found'}</p>}
-      </div>
-
-      <div className="bg-card rounded-xl border border-border p-3 mb-4">
-        <h2 className="font-bold text-sm mb-2">Cart ({cart.length})</h2>
-        {cart.length === 0 ? (
-          <p className="text-muted-foreground text-sm text-center py-3">Tap a product to add</p>
-        ) : (
-          <div className="space-y-2 max-h-40 overflow-y-auto">
-            {cart.map(c => (
-              <div key={c.product.id} className="flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{c.product.name}</p>
-                  <p className="text-xs text-muted-foreground">{peso(c.product.selling_price)} each</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => updateQty(c.product.id, -0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={getQtyDisplay(c.product.id, c.quantity)}
-                    onChange={e => setQty(c.product.id, e.target.value)}
-                    onBlur={() => handleQtyBlur(c.product.id)}
-                    className="w-14 text-center text-sm font-bold bg-background border border-border rounded-md h-7"
-                  />
-                  <button onClick={() => updateQty(c.product.id, 0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
-                </div>
-                <p className="text-sm font-bold w-16 text-right">{peso(c.product.selling_price * c.quantity)}</p>
-                <button onClick={() => removeFromCart(c.product.id)} className="text-destructive active:scale-90"><Trash2 className="w-4 h-4" /></button>
-              </div>
-            ))}
+      <div className="grid lg:grid-cols-[1fr_380px] gap-4">
+        {/* LEFT: Products */}
+        <div className="min-w-0">
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, brand, or category..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 bg-card"
+            />
           </div>
-        )}
-        <div className="border-t border-border mt-3 pt-3 flex justify-between items-center">
-          <span className="font-bold">Total</span>
-          <span className="text-lg font-extrabold text-primary">{peso(total)}</span>
-        </div>
-      </div>
 
-      {cart.length > 0 && (
-        <div className="bg-card rounded-xl border border-border p-3 mb-4 animate-fade-in">
-          <label className="text-sm font-bold mb-1 block">Amount Paid</label>
-          <Input type="number" inputMode="decimal" placeholder="0.00" value={paid} onChange={e => setPaid(e.target.value)} className="h-12 text-lg font-bold bg-background mb-2" />
-          {paidNum > 0 && (
-            <div className={`text-center text-lg font-extrabold ${change >= 0 ? 'text-success' : 'text-destructive'}`}>
-              Change: {peso(Math.max(0, change))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {filtered.map(p => (
+              <button
+                key={p.id}
+                onClick={() => addToCart(p)}
+                className="group bg-card rounded-2xl p-3 text-left border border-border hover:border-primary hover:shadow-md active:scale-[0.98] transition-all flex flex-col"
+              >
+                <div className="aspect-square w-full rounded-xl bg-muted mb-3 overflow-hidden flex items-center justify-center">
+                  {p.image_url ? (
+                    <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <Package className="w-8 h-8 text-muted-foreground/50" />
+                  )}
+                </div>
+                {p.brand && (
+                  <p className="text-[11px] font-semibold text-foreground/70 uppercase tracking-wide truncate">
+                    {p.brand}
+                  </p>
+                )}
+                <p className="text-sm font-bold leading-tight line-clamp-2 mb-1.5 min-h-[2.5rem]">{p.name}</p>
+                <div className="mt-auto flex items-end justify-between gap-2">
+                  <span className="text-base font-extrabold text-primary">{peso(p.selling_price)}</span>
+                  <span className="text-[10px] text-muted-foreground font-semibold">Stock: {p.stock}</span>
+                </div>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="col-span-full text-center text-muted-foreground text-sm py-12">
+                {products.length === 0 ? 'Add products in Inventory first' : 'No products found'}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Cart + Total (sticky on desktop) */}
+        <aside className="lg:sticky lg:top-4 lg:self-start space-y-3">
+          <div className="bg-card rounded-2xl border border-border p-4">
+            <h2 className="font-bold text-sm mb-3">Cart ({cart.length})</h2>
+            {cart.length === 0 ? (
+              <p className="text-muted-foreground text-sm text-center py-6">Tap a product to add</p>
+            ) : (
+              <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                {cart.map(c => (
+                  <div key={c.product.id} className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{c.product.name}</p>
+                      <p className="text-xs text-muted-foreground">{peso(c.product.selling_price)} each</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateQty(c.product.id, -0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={getQtyDisplay(c.product.id, c.quantity)}
+                        onChange={e => setQty(c.product.id, e.target.value)}
+                        onBlur={() => handleQtyBlur(c.product.id)}
+                        className="w-12 text-center text-sm font-bold bg-background border border-border rounded-md h-7"
+                      />
+                      <button onClick={() => updateQty(c.product.id, 0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
+                    </div>
+                    <p className="text-sm font-bold w-16 text-right">{peso(c.product.selling_price * c.quantity)}</p>
+                    <button onClick={() => removeFromCart(c.product.id)} className="text-destructive active:scale-90"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="border-t border-border mt-3 pt-3 flex justify-between items-center">
+              <span className="font-bold">Total</span>
+              <span className="text-xl font-extrabold text-primary">{peso(total)}</span>
+            </div>
+          </div>
+
+          {cart.length > 0 && (
+            <div className="bg-card rounded-2xl border border-border p-4 animate-fade-in">
+              <label className="text-sm font-bold mb-1 block">Amount Paid</label>
+              <Input type="number" inputMode="decimal" placeholder="0.00" value={paid} onChange={e => setPaid(e.target.value)} className="h-12 text-lg font-bold bg-background mb-2" />
+              {paidNum > 0 && (
+                <div className={`text-center text-lg font-extrabold ${change >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  Change: {peso(Math.max(0, change))}
+                </div>
+              )}
+              <Button onClick={checkout} disabled={paidNum < total || processing} className="w-full h-12 mt-2 text-base font-bold">
+                <CheckCircle className="w-5 h-5 mr-1" /> {processing ? 'Processing...' : 'Complete Sale'}
+              </Button>
             </div>
           )}
-          <Button onClick={checkout} disabled={paidNum < total || processing} className="w-full h-12 mt-2 text-base font-bold">
-            <CheckCircle className="w-5 h-5 mr-1" /> {processing ? 'Processing...' : 'Complete Sale'}
-          </Button>
-        </div>
-      )}
+        </aside>
+      </div>
 
       {receipt && (
         <div className="fixed inset-0 z-50 bg-foreground/40 flex items-center justify-center p-4" onClick={() => setReceipt(null)}>
