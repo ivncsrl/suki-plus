@@ -14,7 +14,12 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Roboto', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      boxShadow: {
+        'mui-1': 'var(--shadow-1)',
+        'mui-2': 'var(--shadow-2)',
+        'mui-4': 'var(--shadow-4)',
       },
       colors: {
         border: "hsl(var(--border))",
