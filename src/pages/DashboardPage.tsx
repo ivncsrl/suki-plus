@@ -35,6 +35,14 @@ const DashboardPage = () => {
     lowStockProducts: [], weekSales: 0, weekProfit: 0, weekTxnCount: 0, weekData: [],
   });
   const [loading, setLoading] = useState(true);
+  const [lowStockPage, setLowStockPage] = useState(1);
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(data.lowStockProducts.length / PAGE_SIZE));
+  const pagedLowStock = useMemo(
+    () => data.lowStockProducts.slice((lowStockPage - 1) * PAGE_SIZE, lowStockPage * PAGE_SIZE),
+    [data.lowStockProducts, lowStockPage]
+  );
+  useEffect(() => { if (lowStockPage > totalPages) setLowStockPage(1); }, [totalPages, lowStockPage]);
 
   useEffect(() => {
     if (!user) return;
