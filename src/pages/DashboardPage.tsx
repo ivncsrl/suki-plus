@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso, getBusinessDayStart, getBusinessDate } from '@/lib/format';
-import { ShoppingCart, Package, TrendingUp, AlertTriangle, LogOut, CalendarRange } from 'lucide-react';
+import { ShoppingCart, Package, TrendingUp, AlertTriangle, LogOut, CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
