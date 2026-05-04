@@ -183,7 +183,11 @@ const POSPage = () => {
             ))}
             {filtered.length === 0 && (
               <p className="col-span-full text-center text-muted-foreground text-sm py-12">
-                {products.length === 0 ? 'Add products in Inventory first' : 'No products found'}
+                {products.length === 0
+                  ? 'Add products in Inventory first'
+                  : search.trim()
+                    ? 'No products found'
+                    : 'Start typing to search products by name, brand, or category'}
               </p>
             )}
           </div>
