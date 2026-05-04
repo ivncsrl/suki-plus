@@ -52,7 +52,7 @@ const POSPage = () => {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return products;
+    if (!q) return [];
     return products.filter(p =>
       p.name.toLowerCase().includes(q) ||
       (p.brand?.toLowerCase().includes(q) ?? false) ||
