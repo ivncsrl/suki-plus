@@ -168,7 +168,7 @@ const DashboardPage = () => {
             <CalendarRange className="w-4 h-4 text-primary" />
             <h2 className="font-bold text-sm">This Week</h2>
           </div>
-          <span className="text-[10px] text-muted-foreground">Last 7 days</span>
+          <span className="text-[10px] text-muted-foreground">Mon – Sun</span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
