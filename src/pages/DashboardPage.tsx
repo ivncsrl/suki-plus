@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso, getBusinessDayStart, getBusinessDate } from '@/lib/format';
-import { ShoppingCart, Package, TrendingUp, AlertTriangle, LogOut, CalendarRange } from 'lucide-react';
+import { ShoppingCart, Package, TrendingUp, AlertTriangle, LogOut, CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -35,15 +35,25 @@ const DashboardPage = () => {
     lowStockProducts: [], weekSales: 0, weekProfit: 0, weekTxnCount: 0, weekData: [],
   });
   const [loading, setLoading] = useState(true);
+  const [lowStockPage, setLowStockPage] = useState(1);
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(data.lowStockProducts.length / PAGE_SIZE));
+  const pagedLowStock = useMemo(
+    () => data.lowStockProducts.slice((lowStockPage - 1) * PAGE_SIZE, lowStockPage * PAGE_SIZE),
+    [data.lowStockProducts, lowStockPage]
+  );
+  useEffect(() => { if (lowStockPage > totalPages) setLowStockPage(1); }, [totalPages, lowStockPage]);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       const businessDayStart = getBusinessDayStart();
 
-      // 7-day window starting 6 business days ago at 3 AM
+      // Week starts on Monday at 3 AM (business day start)
       const weekStartDate = new Date(businessDayStart);
-      weekStartDate.setDate(weekStartDate.getDate() - 6);
+      const dow = weekStartDate.getDay(); // 0=Sun..6=Sat
+      const offsetToMonday = (dow + 6) % 7; // Mon=0
+      weekStartDate.setDate(weekStartDate.getDate() - offsetToMonday);
       const weekStartIso = weekStartDate.toISOString();
 
       const [profileRes, productsRes, weekTxnRes] = await Promise.all([
@@ -55,11 +65,11 @@ const DashboardPage = () => {
       const products = productsRes.data || [];
       const txns = weekTxnRes.data || [];
 
-      // Build 7-day buckets
+      // Build 7-day buckets Mon..Sun starting from weekStartDate
       const weekData: DayPoint[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(businessDayStart);
-        d.setDate(d.getDate() - i);
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStartDate);
+        d.setDate(d.getDate() + i);
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
@@ -158,7 +168,7 @@ const DashboardPage = () => {
             <CalendarRange className="w-4 h-4 text-primary" />
             <h2 className="font-bold text-sm">This Week</h2>
           </div>
-          <span className="text-[10px] text-muted-foreground">Last 7 days</span>
+          <span className="text-[10px] text-muted-foreground">Mon – Sun</span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -218,11 +228,11 @@ const DashboardPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.lowStockProducts.map((p, i) => (
+                {pagedLowStock.map((p, i) => (
                   <tr
                     key={p.id}
                     onClick={() => navigate('/inventory')}
-                    className={`cursor-pointer hover:bg-muted/30 transition-colors ${i !== data.lowStockProducts.length - 1 ? 'border-b border-border' : ''}`}
+                    className={`cursor-pointer hover:bg-muted/30 transition-colors ${i !== pagedLowStock.length - 1 ? 'border-b border-border' : ''}`}
                   >
                     <td className="px-4 py-2.5 font-medium truncate max-w-[180px]">{p.name}</td>
                     <td className="px-4 py-2.5 text-muted-foreground hidden sm:table-cell">{p.category || '—'}</td>
@@ -236,6 +246,23 @@ const DashboardPage = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {data.lowStockProducts.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-muted/20 text-xs">
+            <span className="text-muted-foreground">
+              Showing {(lowStockPage - 1) * PAGE_SIZE + 1}–{Math.min(lowStockPage * PAGE_SIZE, data.lowStockProducts.length)} of {data.lowStockProducts.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={lowStockPage === 1} onClick={(e) => { e.stopPropagation(); setLowStockPage(p => Math.max(1, p - 1)); }}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="px-2 font-semibold">{lowStockPage} / {totalPages}</span>
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={lowStockPage === totalPages} onClick={(e) => { e.stopPropagation(); setLowStockPage(p => Math.min(totalPages, p + 1)); }}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         )}
       </div>
