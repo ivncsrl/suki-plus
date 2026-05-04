@@ -228,11 +228,11 @@ const DashboardPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.lowStockProducts.map((p, i) => (
+                {pagedLowStock.map((p, i) => (
                   <tr
                     key={p.id}
                     onClick={() => navigate('/inventory')}
-                    className={`cursor-pointer hover:bg-muted/30 transition-colors ${i !== data.lowStockProducts.length - 1 ? 'border-b border-border' : ''}`}
+                    className={`cursor-pointer hover:bg-muted/30 transition-colors ${i !== pagedLowStock.length - 1 ? 'border-b border-border' : ''}`}
                   >
                     <td className="px-4 py-2.5 font-medium truncate max-w-[180px]">{p.name}</td>
                     <td className="px-4 py-2.5 text-muted-foreground hidden sm:table-cell">{p.category || '—'}</td>
@@ -246,6 +246,23 @@ const DashboardPage = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {data.lowStockProducts.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-muted/20 text-xs">
+            <span className="text-muted-foreground">
+              Showing {(lowStockPage - 1) * PAGE_SIZE + 1}–{Math.min(lowStockPage * PAGE_SIZE, data.lowStockProducts.length)} of {data.lowStockProducts.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={lowStockPage === 1} onClick={(e) => { e.stopPropagation(); setLowStockPage(p => Math.max(1, p - 1)); }}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="px-2 font-semibold">{lowStockPage} / {totalPages}</span>
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={lowStockPage === totalPages} onClick={(e) => { e.stopPropagation(); setLowStockPage(p => Math.min(totalPages, p + 1)); }}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         )}
       </div>
