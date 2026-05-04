@@ -386,47 +386,47 @@ const InventoryPage = () => {
         {filtered.map(p => {
           const isExpanded = expandedId === p.id;
           return (
-            <div key={p.id} className={`bg-card rounded-xl border ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} overflow-hidden`}>
+            <div key={p.id} className={`bg-card rounded-xl border ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} shadow-mui-1 hover:shadow-mui-2 transition-shadow overflow-hidden`}>
               <button
                 type="button"
                 onClick={() => setExpandedId(isExpanded ? null : p.id)}
-                className="w-full p-3 text-left active:bg-muted/30 transition-colors"
+                className="w-full p-4 text-left active:bg-muted/30 transition-colors"
               >
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(p.id)}
                       onChange={() => toggleSelect(p.id)}
                       onClick={e => e.stopPropagation()}
-                      className="w-4 h-4 rounded border-border accent-primary shrink-0"
+                      className="w-5 h-5 rounded border-border accent-primary shrink-0"
                     />
                     {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} className="w-10 h-10 rounded-md object-cover border border-border shrink-0" />
+                      <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded-lg object-cover border border-border shrink-0" />
                     ) : (
-                      <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0">
-                        <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                      <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <ImagePlus className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <h3 className="font-bold text-sm truncate">{p.name}</h3>
-                        {p.stock <= LOW_STOCK && <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />}
+                        <h3 className="font-bold text-lg truncate">{p.name}</h3>
+                        {p.stock <= LOW_STOCK && <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />}
                       </div>
-                      <p className="text-xs truncate mt-0.5">
+                      <p className="text-sm truncate mt-1">
                         {p.brand && <span className="font-semibold text-foreground">{p.brand}</span>}
                         {p.brand && p.category && <span className="text-muted-foreground"> · </span>}
                         {p.category && <span className="text-muted-foreground">{p.category}</span>}
                       </p>
                     </div>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
-                <div className="grid grid-cols-4 gap-1 mt-2 text-[11px]">
-                  <div><span className="text-muted-foreground">Stock:</span> <span className="font-bold">{p.stock}</span></div>
-                  <div><span className="text-muted-foreground">Buy:</span> <span className="font-bold">{peso(p.buying_price)}</span></div>
-                  <div><span className="text-muted-foreground">Sell:</span> <span className="font-bold">{peso(p.selling_price)}</span></div>
-                  <div><span className="text-muted-foreground">Profit:</span> <span className="font-bold text-success">{peso(p.selling_price - p.buying_price)}</span></div>
+                <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
+                  <div><div className="text-xs text-muted-foreground">Stock</div><div className="font-bold text-base">{p.stock}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Buy</div><div className="font-bold text-base">{peso(p.buying_price)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Sell</div><div className="font-bold text-base">{peso(p.selling_price)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Profit</div><div className="font-bold text-base text-success">{peso(p.selling_price - p.buying_price)}</div></div>
                 </div>
               </button>
 

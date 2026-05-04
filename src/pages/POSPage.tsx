@@ -52,7 +52,7 @@ const POSPage = () => {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return products;
+    if (!q) return [];
     return products.filter(p =>
       p.name.toLowerCase().includes(q) ||
       (p.brand?.toLowerCase().includes(q) ?? false) ||
@@ -183,7 +183,11 @@ const POSPage = () => {
             ))}
             {filtered.length === 0 && (
               <p className="col-span-full text-center text-muted-foreground text-sm py-12">
-                {products.length === 0 ? 'Add products in Inventory first' : 'No products found'}
+                {products.length === 0
+                  ? 'Add products in Inventory first'
+                  : search.trim()
+                    ? 'No products found'
+                    : 'Start typing to search products by name, brand, or category'}
               </p>
             )}
           </div>
