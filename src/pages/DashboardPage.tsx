@@ -41,9 +41,11 @@ const DashboardPage = () => {
     const load = async () => {
       const businessDayStart = getBusinessDayStart();
 
-      // 7-day window starting 6 business days ago at 3 AM
+      // Week starts on Monday at 3 AM (business day start)
       const weekStartDate = new Date(businessDayStart);
-      weekStartDate.setDate(weekStartDate.getDate() - 6);
+      const dow = weekStartDate.getDay(); // 0=Sun..6=Sat
+      const offsetToMonday = (dow + 6) % 7; // Mon=0
+      weekStartDate.setDate(weekStartDate.getDate() - offsetToMonday);
       const weekStartIso = weekStartDate.toISOString();
 
       const [profileRes, productsRes, weekTxnRes] = await Promise.all([
