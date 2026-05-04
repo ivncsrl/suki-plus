@@ -57,11 +57,11 @@ const DashboardPage = () => {
       const products = productsRes.data || [];
       const txns = weekTxnRes.data || [];
 
-      // Build 7-day buckets
+      // Build 7-day buckets Mon..Sun starting from weekStartDate
       const weekData: DayPoint[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(businessDayStart);
-        d.setDate(d.getDate() - i);
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStartDate);
+        d.setDate(d.getDate() + i);
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
