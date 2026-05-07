@@ -213,6 +213,23 @@ const InventoryPage = () => {
     });
   };
 
+  const handleDuplicate = async (p: Product) => {
+    if (!user) return;
+    const { error } = await supabase.from('products').insert({
+      user_id: user.id,
+      name: `${p.name} (Copy)`,
+      brand: p.brand,
+      category: p.category || '',
+      stock: p.stock,
+      buying_price: p.buying_price,
+      selling_price: p.selling_price,
+      image_url: p.image_url,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Duplicated "${p.name}"`);
+    load();
+  };
+
   const handleRenameCategory = async () => {
     if (!user || !editingCategory || !newCategoryName.trim()) return;
     const trimmed = newCategoryName.trim();
