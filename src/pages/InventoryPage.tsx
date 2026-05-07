@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus, ImagePlus, Loader2, Globe } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus, ImagePlus, Loader2, Globe, Copy } from 'lucide-react';
 import WebImagePicker from '@/components/WebImagePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
