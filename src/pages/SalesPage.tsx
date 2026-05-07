@@ -276,18 +276,24 @@ const SalesPage = () => {
             <TrendingUp className="w-4 h-4 text-primary" />
             <h2 className="font-bold text-sm">Sales Trend</h2>
           </div>
-          <div className="flex gap-1">
-            {([7, 15, 30] as const).map(r => (
-              <Button
-                key={r}
-                variant={chartRange === r ? 'default' : 'outline'}
-                size="sm"
-                className="h-7 px-2 text-[11px]"
-                onClick={() => setChartRange(r)}
-              >
-                {r}d
-              </Button>
-            ))}
+          <div className="flex gap-1 items-center">
+            {usingDateRange ? (
+              <span className="text-[10px] text-muted-foreground font-semibold px-1">
+                {chartDays} day{chartDays > 1 ? 's' : ''} (date range)
+              </span>
+            ) : (
+              ([7, 15, 30] as const).map(r => (
+                <Button
+                  key={r}
+                  variant={chartRange === r ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-7 px-2 text-[11px]"
+                  onClick={() => setChartRange(r)}
+                >
+                  {r}d
+                </Button>
+              ))
+            )}
           </div>
         </div>
 
