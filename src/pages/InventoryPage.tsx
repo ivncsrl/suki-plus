@@ -454,6 +454,9 @@ const InventoryPage = () => {
                     <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => startEdit(p)}>
                       <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
                     </Button>
+                    <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => handleDuplicate(p)}>
+                      <Copy className="w-3.5 h-3.5 mr-1.5" /> Duplicate
+                    </Button>
                     <Button size="sm" variant="destructive" className="flex-1 h-9" onClick={() => setDeleteTarget(p)}>
                       <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
                     </Button>
