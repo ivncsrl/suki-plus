@@ -317,7 +317,7 @@ const SalesPage = () => {
                 tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
-                interval={chartRange === 30 ? 3 : chartRange === 15 ? 1 : 0}
+                interval={chartDays > 20 ? Math.floor(chartDays / 8) : chartDays > 10 ? 1 : 0}
               />
               <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={50} tickFormatter={(v) => v >= 1000 ? `${Math.round(v/1000)}k` : `${v}`} />
               <Tooltip
