@@ -121,6 +121,40 @@ const SalesPage = () => {
   const todayTotal = todaySales.reduce((s, t) => s + t.total, 0);
   const todayProfit = todaySales.reduce((s, t) => s + t.profit, 0);
 
+  // Chart data: last N business days ending today
+  const chartData = useMemo(() => {
+    const buckets: { date: string; label: string; sales: number; profit: number }[] = [];
+    const todayDate = new Date(today + 'T12:00:00');
+    for (let i = chartRange - 1; i >= 0; i--) {
+      const d = new Date(todayDate);
+      d.setDate(d.getDate() - i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const key = `${y}-${m}-${day}`;
+      buckets.push({
+        date: key,
+        label: chartRange <= 7
+          ? d.toLocaleDateString('en-PH', { weekday: 'short' })
+          : d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }),
+        sales: 0,
+        profit: 0,
+      });
+    }
+    const map = new Map(buckets.map(b => [b.date, b]));
+    for (const t of transactions) {
+      const bd = toBusinessDate(t.created_at);
+      const b = map.get(bd);
+      if (b) { b.sales += t.total; b.profit += t.profit; }
+    }
+    return buckets;
+  }, [transactions, chartRange, today]);
+
+  const chartTotals = useMemo(() => ({
+    sales: chartData.reduce((s, d) => s + d.sales, 0),
+    profit: chartData.reduce((s, d) => s + d.profit, 0),
+  }), [chartData]);
+
   // ---- Delete ----
   const handleDelete = async () => {
     if (!deleteId || !user) return;
