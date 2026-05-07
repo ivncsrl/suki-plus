@@ -253,7 +253,65 @@ const SalesPage = () => {
         </div>
       </div>
 
-      <div className="relative mb-3">
+      {/* Sales Trend Chart */}
+      <div className="bg-card rounded-xl border border-border p-4 mb-4 shadow-mui-1">
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            <h2 className="font-bold text-sm">Sales Trend</h2>
+          </div>
+          <div className="flex gap-1">
+            {([7, 15, 30] as const).map(r => (
+              <Button
+                key={r}
+                variant={chartRange === r ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => setChartRange(r)}
+              >
+                {r}d
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="rounded-lg bg-primary/5 border border-primary/10 p-2">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase">Sales</p>
+            <p className="text-base font-extrabold text-primary leading-tight">{peso(chartTotals.sales)}</p>
+          </div>
+          <div className="rounded-lg bg-success/5 border border-success/10 p-2">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase">Profit</p>
+            <p className="text-base font-extrabold text-success leading-tight">{peso(chartTotals.profit)}</p>
+          </div>
+        </div>
+
+        <div className="h-44 -ml-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={false}
+                tickLine={false}
+                interval={chartRange === 30 ? 3 : chartRange === 15 ? 1 : 0}
+              />
+              <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={50} tickFormatter={(v) => v >= 1000 ? `${Math.round(v/1000)}k` : `${v}`} />
+              <Tooltip
+                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
+                contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }}
+                formatter={(v: number, name: string) => [peso(v), name === 'sales' ? 'Sales' : 'Profit']}
+                labelFormatter={(l, payload) => payload?.[0]?.payload?.date || l}
+              />
+              <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="profit" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           placeholder="Search product sold..."
