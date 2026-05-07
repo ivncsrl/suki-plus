@@ -44,6 +44,7 @@ const SalesPage = () => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [chartRange, setChartRange] = useState<7 | 15 | 30>(7);
 
   // Delete state
   const [deleteId, setDeleteId] = useState<string | null>(null);
