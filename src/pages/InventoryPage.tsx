@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus, ImagePlus, Loader2, Globe } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus, ImagePlus, Loader2, Globe, Copy } from 'lucide-react';
 import WebImagePicker from '@/components/WebImagePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -211,6 +211,23 @@ const InventoryPage = () => {
       },
       duration: 6000,
     });
+  };
+
+  const handleDuplicate = async (p: Product) => {
+    if (!user) return;
+    const { error } = await supabase.from('products').insert({
+      user_id: user.id,
+      name: `${p.name} (Copy)`,
+      brand: p.brand,
+      category: p.category || '',
+      stock: p.stock,
+      buying_price: p.buying_price,
+      selling_price: p.selling_price,
+      image_url: p.image_url,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Duplicated "${p.name}"`);
+    load();
   };
 
   const handleRenameCategory = async () => {
@@ -436,6 +453,9 @@ const InventoryPage = () => {
                   <div className="flex gap-2 pt-1">
                     <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => startEdit(p)}>
                       <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => handleDuplicate(p)}>
+                      <Copy className="w-3.5 h-3.5 mr-1.5" /> Duplicate
                     </Button>
                     <Button size="sm" variant="destructive" className="flex-1 h-9" onClick={() => setDeleteTarget(p)}>
                       <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
