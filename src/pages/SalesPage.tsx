@@ -121,20 +121,36 @@ const SalesPage = () => {
   const todayTotal = todaySales.reduce((s, t) => s + t.total, 0);
   const todayProfit = todaySales.reduce((s, t) => s + t.profit, 0);
 
-  // Chart data: last N business days ending today
+  // Chart data: derived from From/To dates if set, else from chartRange buttons
+  const usingDateRange = !!(fromDate || toDate);
+  const { chartStart, chartEnd, chartDays } = useMemo(() => {
+    if (usingDateRange) {
+      const end = toDate || fromDate || today;
+      const start = fromDate || toDate || today;
+      const sd = new Date(start + 'T12:00:00');
+      const ed = new Date(end + 'T12:00:00');
+      const days = Math.max(1, Math.round((ed.getTime() - sd.getTime()) / 86400000) + 1);
+      return { chartStart: sd, chartEnd: ed, chartDays: days };
+    }
+    const ed = new Date(today + 'T12:00:00');
+    const sd = new Date(ed);
+    sd.setDate(sd.getDate() - (chartRange - 1));
+    return { chartStart: sd, chartEnd: ed, chartDays: chartRange };
+  }, [usingDateRange, fromDate, toDate, chartRange, today]);
+
   const chartData = useMemo(() => {
     const buckets: { date: string; label: string; sales: number; profit: number }[] = [];
-    const todayDate = new Date(today + 'T12:00:00');
-    for (let i = chartRange - 1; i >= 0; i--) {
-      const d = new Date(todayDate);
-      d.setDate(d.getDate() - i);
+    const useShortDay = chartDays <= 7;
+    for (let i = 0; i < chartDays; i++) {
+      const d = new Date(chartStart);
+      d.setDate(d.getDate() + i);
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       const key = `${y}-${m}-${day}`;
       buckets.push({
         date: key,
-        label: chartRange <= 7
+        label: useShortDay
           ? d.toLocaleDateString('en-PH', { weekday: 'short' })
           : d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }),
         sales: 0,
@@ -148,7 +164,7 @@ const SalesPage = () => {
       if (b) { b.sales += t.total; b.profit += t.profit; }
     }
     return buckets;
-  }, [transactions, chartRange, today]);
+  }, [transactions, chartStart, chartDays]);
 
   const chartTotals = useMemo(() => ({
     sales: chartData.reduce((s, d) => s + d.sales, 0),
@@ -260,18 +276,24 @@ const SalesPage = () => {
             <TrendingUp className="w-4 h-4 text-primary" />
             <h2 className="font-bold text-sm">Sales Trend</h2>
           </div>
-          <div className="flex gap-1">
-            {([7, 15, 30] as const).map(r => (
-              <Button
-                key={r}
-                variant={chartRange === r ? 'default' : 'outline'}
-                size="sm"
-                className="h-7 px-2 text-[11px]"
-                onClick={() => setChartRange(r)}
-              >
-                {r}d
-              </Button>
-            ))}
+          <div className="flex gap-1 items-center">
+            {usingDateRange ? (
+              <span className="text-[10px] text-muted-foreground font-semibold px-1">
+                {chartDays} day{chartDays > 1 ? 's' : ''} (date range)
+              </span>
+            ) : (
+              ([7, 15, 30] as const).map(r => (
+                <Button
+                  key={r}
+                  variant={chartRange === r ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-7 px-2 text-[11px]"
+                  onClick={() => setChartRange(r)}
+                >
+                  {r}d
+                </Button>
+              ))
+            )}
           </div>
         </div>
 
@@ -295,7 +317,7 @@ const SalesPage = () => {
                 tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
-                interval={chartRange === 30 ? 3 : chartRange === 15 ? 1 : 0}
+                interval={chartDays > 20 ? Math.floor(chartDays / 8) : chartDays > 10 ? 1 : 0}
               />
               <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={50} tickFormatter={(v) => v >= 1000 ? `${Math.round(v/1000)}k` : `${v}`} />
               <Tooltip
