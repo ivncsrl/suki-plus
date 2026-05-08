@@ -44,9 +44,7 @@ const ExpensesPage = () => {
 
   const totalExpenses = filtered.reduce((s, e) => s + e.amount, 0);
   const allExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const cogs = totalRevenue - totalSalesProfit; // from inventory buy price × units sold
-  const grossProfit = totalRevenue - cogs;       // = totalSalesProfit
-  const netProfit = grossProfit - allExpenses;   // operating expenses only deduct here
+  const remaining = totalSales - allExpenses;
 
   const resetForm = () => setForm({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '', receipt_number: '' });
 
