@@ -116,7 +116,7 @@ const ExpensesPage = () => {
           <p className={`text-sm font-extrabold ${remaining >= 0 ? 'text-success' : 'text-destructive'}`}>{peso(remaining)}</p>
         </div>
       </div>
-      <p className="text-[10px] text-muted-foreground mb-3 text-center">Gross Profit = Revenue − COGS · Net Profit = Gross Profit − Operating Expenses</p>
+      
 
       <div className="flex gap-2 mb-2 overflow-x-auto">
         {['All', ...TYPES].map(t => (
