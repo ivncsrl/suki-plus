@@ -46,7 +46,8 @@ const ExpensesPage = () => {
 
   const totalExpenses = filtered.reduce((s, e) => s + e.amount, 0);
   const allExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const netEarnings = totalSalesProfit - allExpenses;
+  const cogs = totalRevenue - totalSalesProfit;
+  const netProfit = totalRevenue - cogs - allExpenses;
 
   const resetForm = () => setForm({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '', receipt_number: '' });
 
