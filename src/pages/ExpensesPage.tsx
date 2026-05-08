@@ -46,8 +46,9 @@ const ExpensesPage = () => {
 
   const totalExpenses = filtered.reduce((s, e) => s + e.amount, 0);
   const allExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const cogs = totalRevenue - totalSalesProfit;
-  const netProfit = totalRevenue - cogs - allExpenses;
+  const cogs = totalRevenue - totalSalesProfit; // from inventory buy price × units sold
+  const grossProfit = totalRevenue - cogs;       // = totalSalesProfit
+  const netProfit = grossProfit - allExpenses;   // operating expenses only deduct here
 
   const resetForm = () => setForm({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '', receipt_number: '' });
 
@@ -105,19 +106,23 @@ const ExpensesPage = () => {
         <Button size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-1" /> Add</Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mb-2">
+      <div className="grid grid-cols-3 gap-2 mb-2">
         <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingUp className="w-3 h-3" /> Total Revenue</p>
+          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingUp className="w-3 h-3" /> Revenue</p>
           <p className="text-sm font-extrabold text-success">{peso(totalRevenue)}</p>
         </div>
         <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold">Cost of Goods</p>
+          <p className="text-[10px] text-muted-foreground font-semibold">COGS</p>
           <p className="text-sm font-extrabold text-foreground">{peso(cogs)}</p>
+        </div>
+        <div className="bg-card rounded-lg p-2 border border-border text-center">
+          <p className="text-[10px] text-muted-foreground font-semibold">Gross Profit</p>
+          <p className="text-sm font-extrabold text-success">{peso(grossProfit)}</p>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingDown className="w-3 h-3" /> Expenses</p>
+          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingDown className="w-3 h-3" /> Operating Expenses</p>
           <p className="text-sm font-extrabold text-destructive">{peso(allExpenses)}</p>
         </div>
         <div className={`rounded-lg p-2 border text-center ${netProfit >= 0 ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'}`}>
@@ -125,6 +130,7 @@ const ExpensesPage = () => {
           <p className={`text-sm font-extrabold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{peso(netProfit)}</p>
         </div>
       </div>
+      <p className="text-[10px] text-muted-foreground mb-3 text-center">Gross Profit = Revenue − COGS · Net Profit = Gross Profit − Operating Expenses</p>
 
       <div className="flex gap-2 mb-2 overflow-x-auto">
         {['All', ...TYPES].map(t => (
