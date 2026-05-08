@@ -14,7 +14,8 @@ const ExpensesPage = () => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '' });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '', receipt_number: '' });
   const [filterType, setFilterType] = useState('All');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
