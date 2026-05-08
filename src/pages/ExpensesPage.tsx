@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Plus, Trash2, TrendingDown, TrendingUp } from 'lucide-react';
+import { Plus, Trash2, TrendingDown, TrendingUp, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,8 @@ const ExpensesPage = () => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '' });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '', receipt_number: '' });
   const [filterType, setFilterType] = useState('All');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -45,25 +46,48 @@ const ExpensesPage = () => {
   const allExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const netEarnings = totalSalesProfit - allExpenses;
 
+  const resetForm = () => setForm({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '', receipt_number: '' });
+
   const handleSubmit = async () => {
     if (!user || !form.amount) return;
     try {
-      const { error } = await supabase.from('expenses').insert({
-        user_id: user.id,
+      const payload = {
         type: form.type,
         description: form.description.trim(),
         amount: parseFloat(form.amount) || 0,
         date: form.date,
         destination: (form.type === 'Travel' || form.type === 'Restock Trip') ? form.destination.trim() || null : null,
-      });
-      if (error) throw error;
-      setForm({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '' });
+        receipt_number: form.receipt_number.trim() || null,
+      };
+      if (editingId) {
+        const { error } = await supabase.from('expenses').update(payload).eq('id', editingId);
+        if (error) throw error;
+        toast.success('Expense updated');
+      } else {
+        const { error } = await supabase.from('expenses').insert({ user_id: user.id, ...payload });
+        if (error) throw error;
+        toast.success('Expense added');
+      }
+      resetForm();
+      setEditingId(null);
       setShowForm(false);
       load();
-      toast.success('Expense added');
     } catch (err: any) {
       toast.error(err.message);
     }
+  };
+
+  const handleEdit = (e: any) => {
+    setEditingId(e.id);
+    setForm({
+      type: e.type,
+      description: e.description || '',
+      amount: String(e.amount),
+      date: e.date,
+      destination: e.destination || '',
+      receipt_number: e.receipt_number || '',
+    });
+    setShowForm(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -119,17 +143,19 @@ const ExpensesPage = () => {
               </div>
               {e.description && <p className="text-xs mt-0.5 truncate">{e.description}</p>}
               {e.destination && <p className="text-[10px] text-muted-foreground">📍 {e.destination}</p>}
+              {e.receipt_number && <p className="text-[10px] text-muted-foreground">🧾 #{e.receipt_number}</p>}
             </div>
             <p className="text-sm font-extrabold text-destructive">{peso(e.amount)}</p>
+            <button onClick={() => handleEdit(e)} className="text-primary/70 active:scale-90"><Pencil className="w-4 h-4" /></button>
             <button onClick={() => handleDelete(e.id)} className="text-destructive/60 active:scale-90"><Trash2 className="w-4 h-4" /></button>
           </div>
         ))}
       </div>
 
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      <Dialog open={showForm} onOpenChange={(o) => { setShowForm(o); if (!o) { setEditingId(null); resetForm(); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-extrabold text-lg">New Expense</DialogTitle>
+            <DialogTitle className="font-extrabold text-lg">{editingId ? 'Edit Expense' : 'New Expense'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="flex gap-2 flex-wrap">
@@ -140,10 +166,11 @@ const ExpensesPage = () => {
             <Input placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="h-11" />
             <Input type="number" inputMode="decimal" placeholder="Amount (₱)" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="h-11" />
             <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="h-11" />
+            <Input placeholder="Receipt number (optional)" value={form.receipt_number} onChange={e => setForm({ ...form, receipt_number: e.target.value })} className="h-11" />
             {(form.type === 'Travel' || form.type === 'Restock Trip') && (
               <Input placeholder="Destination city (optional)" value={form.destination} onChange={e => setForm({ ...form, destination: e.target.value })} className="h-11" />
             )}
-            <Button onClick={handleSubmit} className="w-full h-11 font-bold">Add Expense</Button>
+            <Button onClick={handleSubmit} className="w-full h-11 font-bold">{editingId ? 'Save Changes' : 'Add Expense'}</Button>
           </div>
         </DialogContent>
       </Dialog>
