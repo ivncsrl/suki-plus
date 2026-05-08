@@ -46,25 +46,48 @@ const ExpensesPage = () => {
   const allExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const netEarnings = totalSalesProfit - allExpenses;
 
+  const resetForm = () => setForm({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '', receipt_number: '' });
+
   const handleSubmit = async () => {
     if (!user || !form.amount) return;
     try {
-      const { error } = await supabase.from('expenses').insert({
-        user_id: user.id,
+      const payload = {
         type: form.type,
         description: form.description.trim(),
         amount: parseFloat(form.amount) || 0,
         date: form.date,
         destination: (form.type === 'Travel' || form.type === 'Restock Trip') ? form.destination.trim() || null : null,
-      });
-      if (error) throw error;
-      setForm({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '' });
+        receipt_number: form.receipt_number.trim() || null,
+      };
+      if (editingId) {
+        const { error } = await supabase.from('expenses').update(payload).eq('id', editingId);
+        if (error) throw error;
+        toast.success('Expense updated');
+      } else {
+        const { error } = await supabase.from('expenses').insert({ user_id: user.id, ...payload });
+        if (error) throw error;
+        toast.success('Expense added');
+      }
+      resetForm();
+      setEditingId(null);
       setShowForm(false);
       load();
-      toast.success('Expense added');
     } catch (err: any) {
       toast.error(err.message);
     }
+  };
+
+  const handleEdit = (e: any) => {
+    setEditingId(e.id);
+    setForm({
+      type: e.type,
+      description: e.description || '',
+      amount: String(e.amount),
+      date: e.date,
+      destination: e.destination || '',
+      receipt_number: e.receipt_number || '',
+    });
+    setShowForm(true);
   };
 
   const handleDelete = async (id: string) => {
