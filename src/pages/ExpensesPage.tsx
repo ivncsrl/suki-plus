@@ -125,7 +125,6 @@ const ExpensesPage = () => {
           <p className={`text-sm font-extrabold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{peso(netProfit)}</p>
         </div>
       </div>
-      </div>
 
       <div className="flex gap-2 mb-2 overflow-x-auto">
         {['All', ...TYPES].map(t => (
