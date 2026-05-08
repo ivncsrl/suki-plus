@@ -19,8 +19,7 @@ const ExpensesPage = () => {
   const [filterType, setFilterType] = useState('All');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalSalesProfit, setTotalSalesProfit] = useState(0);
+  const [totalSales, setTotalSales] = useState(0);
 
   const load = useCallback(async () => {
     if (!user) return;
