@@ -19,18 +19,16 @@ const ExpensesPage = () => {
   const [filterType, setFilterType] = useState('All');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalSalesProfit, setTotalSalesProfit] = useState(0);
+  const [totalSales, setTotalSales] = useState(0);
 
   const load = useCallback(async () => {
     if (!user) return;
     const [{ data: exp }, { data: txns }] = await Promise.all([
       supabase.from('expenses').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-      supabase.from('transactions').select('total, profit').eq('user_id', user.id),
+      supabase.from('transactions').select('total').eq('user_id', user.id),
     ]);
     setExpenses((exp || []).map(e => ({ ...e, amount: Number(e.amount) })));
-    setTotalRevenue((txns || []).reduce((s, t) => s + Number(t.total), 0));
-    setTotalSalesProfit((txns || []).reduce((s, t) => s + Number(t.profit), 0));
+    setTotalSales((txns || []).reduce((s, t) => s + Number(t.total), 0));
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
@@ -46,9 +44,7 @@ const ExpensesPage = () => {
 
   const totalExpenses = filtered.reduce((s, e) => s + e.amount, 0);
   const allExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const cogs = totalRevenue - totalSalesProfit; // from inventory buy price × units sold
-  const grossProfit = totalRevenue - cogs;       // = totalSalesProfit
-  const netProfit = grossProfit - allExpenses;   // operating expenses only deduct here
+  const remaining = totalSales - allExpenses;
 
   const resetForm = () => setForm({ type: 'Other', description: '', amount: '', date: new Date().toISOString().slice(0, 10), destination: '', receipt_number: '' });
 
@@ -106,31 +102,21 @@ const ExpensesPage = () => {
         <Button size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-1" /> Add</Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-2">
+      <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingUp className="w-3 h-3" /> Revenue</p>
-          <p className="text-sm font-extrabold text-success">{peso(totalRevenue)}</p>
+          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingUp className="w-3 h-3" /> Total Sales</p>
+          <p className="text-sm font-extrabold text-success">{peso(totalSales)}</p>
         </div>
         <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold">COGS</p>
-          <p className="text-sm font-extrabold text-foreground">{peso(cogs)}</p>
-        </div>
-        <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold">Gross Profit</p>
-          <p className="text-sm font-extrabold text-success">{peso(grossProfit)}</p>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingDown className="w-3 h-3" /> Operating Expenses</p>
+          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingDown className="w-3 h-3" /> Expenses</p>
           <p className="text-sm font-extrabold text-destructive">{peso(allExpenses)}</p>
         </div>
-        <div className={`rounded-lg p-2 border text-center ${netProfit >= 0 ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'}`}>
-          <p className="text-[10px] text-muted-foreground font-semibold">Net Profit</p>
-          <p className={`text-sm font-extrabold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{peso(netProfit)}</p>
+        <div className={`rounded-lg p-2 border text-center ${remaining >= 0 ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'}`}>
+          <p className="text-[10px] text-muted-foreground font-semibold">Remaining</p>
+          <p className={`text-sm font-extrabold ${remaining >= 0 ? 'text-success' : 'text-destructive'}`}>{peso(remaining)}</p>
         </div>
       </div>
-      <p className="text-[10px] text-muted-foreground mb-3 text-center">Gross Profit = Revenue − COGS · Net Profit = Gross Profit − Operating Expenses</p>
+      
 
       <div className="flex gap-2 mb-2 overflow-x-auto">
         {['All', ...TYPES].map(t => (
