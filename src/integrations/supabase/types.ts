@@ -22,6 +22,7 @@ export type Database = {
           description: string | null
           destination: string | null
           id: string
+          receipt_number: string | null
           type: string
           user_id: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           description?: string | null
           destination?: string | null
           id?: string
+          receipt_number?: string | null
           type?: string
           user_id: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           description?: string | null
           destination?: string | null
           id?: string
+          receipt_number?: string | null
           type?: string
           user_id?: string
         }
