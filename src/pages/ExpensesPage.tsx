@@ -105,19 +105,26 @@ const ExpensesPage = () => {
         <Button size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-1" /> Add</Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-2">
         <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingUp className="w-3 h-3" /> Sales Profit</p>
-          <p className="text-sm font-extrabold text-success">{peso(totalSalesProfit)}</p>
+          <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingUp className="w-3 h-3" /> Total Revenue</p>
+          <p className="text-sm font-extrabold text-success">{peso(totalRevenue)}</p>
         </div>
+        <div className="bg-card rounded-lg p-2 border border-border text-center">
+          <p className="text-[10px] text-muted-foreground font-semibold">Cost of Goods</p>
+          <p className="text-sm font-extrabold text-foreground">{peso(cogs)}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-card rounded-lg p-2 border border-border text-center">
           <p className="text-[10px] text-muted-foreground font-semibold flex items-center justify-center gap-0.5"><TrendingDown className="w-3 h-3" /> Expenses</p>
           <p className="text-sm font-extrabold text-destructive">{peso(allExpenses)}</p>
         </div>
-        <div className={`rounded-lg p-2 border text-center ${netEarnings >= 0 ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'}`}>
-          <p className="text-[10px] text-muted-foreground font-semibold">Net Earnings</p>
-          <p className={`text-sm font-extrabold ${netEarnings >= 0 ? 'text-success' : 'text-destructive'}`}>{peso(netEarnings)}</p>
+        <div className={`rounded-lg p-2 border text-center ${netProfit >= 0 ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'}`}>
+          <p className="text-[10px] text-muted-foreground font-semibold">Net Profit</p>
+          <p className={`text-sm font-extrabold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{peso(netProfit)}</p>
         </div>
+      </div>
       </div>
 
       <div className="flex gap-2 mb-2 overflow-x-auto">
