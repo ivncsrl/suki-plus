@@ -152,10 +152,10 @@ const ExpensesPage = () => {
         ))}
       </div>
 
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      <Dialog open={showForm} onOpenChange={(o) => { setShowForm(o); if (!o) { setEditingId(null); resetForm(); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-extrabold text-lg">New Expense</DialogTitle>
+            <DialogTitle className="font-extrabold text-lg">{editingId ? 'Edit Expense' : 'New Expense'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="flex gap-2 flex-wrap">
@@ -166,10 +166,11 @@ const ExpensesPage = () => {
             <Input placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="h-11" />
             <Input type="number" inputMode="decimal" placeholder="Amount (₱)" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="h-11" />
             <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="h-11" />
+            <Input placeholder="Receipt number (optional)" value={form.receipt_number} onChange={e => setForm({ ...form, receipt_number: e.target.value })} className="h-11" />
             {(form.type === 'Travel' || form.type === 'Restock Trip') && (
               <Input placeholder="Destination city (optional)" value={form.destination} onChange={e => setForm({ ...form, destination: e.target.value })} className="h-11" />
             )}
-            <Button onClick={handleSubmit} className="w-full h-11 font-bold">Add Expense</Button>
+            <Button onClick={handleSubmit} className="w-full h-11 font-bold">{editingId ? 'Save Changes' : 'Add Expense'}</Button>
           </div>
         </DialogContent>
       </Dialog>
