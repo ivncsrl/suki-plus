@@ -143,8 +143,10 @@ const ExpensesPage = () => {
               </div>
               {e.description && <p className="text-xs mt-0.5 truncate">{e.description}</p>}
               {e.destination && <p className="text-[10px] text-muted-foreground">📍 {e.destination}</p>}
+              {e.receipt_number && <p className="text-[10px] text-muted-foreground">🧾 #{e.receipt_number}</p>}
             </div>
             <p className="text-sm font-extrabold text-destructive">{peso(e.amount)}</p>
+            <button onClick={() => handleEdit(e)} className="text-primary/70 active:scale-90"><Pencil className="w-4 h-4" /></button>
             <button onClick={() => handleDelete(e.id)} className="text-destructive/60 active:scale-90"><Trash2 className="w-4 h-4" /></button>
           </div>
         ))}
