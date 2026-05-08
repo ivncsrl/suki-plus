@@ -25,11 +25,10 @@ const ExpensesPage = () => {
     if (!user) return;
     const [{ data: exp }, { data: txns }] = await Promise.all([
       supabase.from('expenses').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-      supabase.from('transactions').select('total, profit').eq('user_id', user.id),
+      supabase.from('transactions').select('total').eq('user_id', user.id),
     ]);
     setExpenses((exp || []).map(e => ({ ...e, amount: Number(e.amount) })));
-    setTotalRevenue((txns || []).reduce((s, t) => s + Number(t.total), 0));
-    setTotalSalesProfit((txns || []).reduce((s, t) => s + Number(t.profit), 0));
+    setTotalSales((txns || []).reduce((s, t) => s + Number(t.total), 0));
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
