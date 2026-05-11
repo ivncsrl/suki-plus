@@ -64,6 +64,16 @@ const SalesPage = () => {
   // Products for autocomplete
   const [products, setProducts] = useState<{ name: string; selling_price: number; buying_price: number }[]>([]);
 
+  // Add manual sale state
+  const [addOpen, setAddOpen] = useState(false);
+  const [addDate, setAddDate] = useState(getLocalDateStr());
+  const [addItems, setAddItems] = useState<TransactionItem[]>([]);
+  const [addNewName, setAddNewName] = useState('');
+  const [addNewPrice, setAddNewPrice] = useState('');
+  const [addNewCost, setAddNewCost] = useState('');
+  const [addNewQty, setAddNewQty] = useState('1');
+  const [adding, setAdding] = useState(false);
+
   const loadTransactions = useCallback(async () => {
     if (!user) return;
     // Single nested query: avoids the 1000-row default cap on a separate
@@ -254,9 +264,72 @@ const SalesPage = () => {
     setSaving(false);
   };
 
+  // ---- Add Manual Sale ----
+  const resetAdd = () => {
+    setAddItems([]); setAddNewName(''); setAddNewPrice(''); setAddNewCost(''); setAddNewQty('1');
+    setAddDate(getLocalDateStr());
+  };
+
+  const addManualItem = () => {
+    if (!addNewName.trim()) return;
+    const price = parseFloat(addNewPrice) || 0;
+    const cost = parseFloat(addNewCost) || 0;
+    const qty = parseFloat(addNewQty) || 1;
+    setAddItems(prev => [...prev, { product_name: addNewName.trim(), price, cost, quantity: qty }]);
+    setAddNewName(''); setAddNewPrice(''); setAddNewCost(''); setAddNewQty('1');
+  };
+
+  const selectAddProduct = (name: string) => {
+    const p = products.find(pr => pr.name === name);
+    if (p) {
+      setAddNewName(p.name);
+      setAddNewPrice(String(p.selling_price));
+      setAddNewCost(String(p.buying_price));
+    }
+  };
+
+  const addTotal = addItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const addProfit = addItems.reduce((s, i) => s + (i.price - i.cost) * i.quantity, 0);
+
+  const handleAddManualSale = async () => {
+    if (!user || addItems.length === 0) return;
+    setAdding(true);
+    try {
+      // Use noon local time on the selected date to avoid timezone/business-day edge cases
+      const createdAt = new Date(addDate + 'T12:00:00').toISOString();
+      const { data: txn, error: txnErr } = await supabase
+        .from('transactions')
+        .insert({ user_id: user.id, total: addTotal, profit: addProfit, paid: addTotal, created_at: createdAt })
+        .select('id')
+        .single();
+      if (txnErr || !txn) throw txnErr;
+      const items = addItems.map(i => ({
+        transaction_id: txn.id,
+        product_name: i.product_name,
+        quantity: i.quantity,
+        price: i.price,
+        cost: i.cost,
+      }));
+      const { error: itErr } = await supabase.from('transaction_items').insert(items);
+      if (itErr) throw itErr;
+      toast.success('Manual sale added');
+      setAddOpen(false);
+      resetAdd();
+      loadTransactions();
+    } catch {
+      toast.error('Failed to add sale');
+    }
+    setAdding(false);
+  };
+
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
-      <h1 className="text-xl font-extrabold mb-3">📊 Sales Summary</h1>
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-xl font-extrabold">📊 Sales Summary</h1>
+        <Button size="sm" className="h-8 text-xs" onClick={() => { resetAdd(); setAddOpen(true); }}>
+          <Plus className="w-3.5 h-3.5 mr-1" /> Add Sale
+        </Button>
+      </div>
 
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-card rounded-lg p-3 border border-border">
@@ -488,6 +561,80 @@ const SalesPage = () => {
             <Button variant="outline" size="sm" onClick={() => { setEditTxn(null); setEditPassword(''); }}>Cancel</Button>
             <Button size="sm" disabled={!editPassword || saving || editItems.length === 0} onClick={handleSaveEdit}>
               {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Manual Sale Dialog */}
+      <Dialog open={addOpen} onOpenChange={open => { if (!open) { setAddOpen(false); resetAdd(); } }}>
+        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Add Manual Sale</DialogTitle></DialogHeader>
+
+          <div>
+            <label className="text-[10px] text-muted-foreground font-semibold">Sale Date</label>
+            <Input type="date" value={addDate} onChange={e => setAddDate(e.target.value)} className="h-9 text-sm" />
+          </div>
+
+          <div className="space-y-2">
+            {addItems.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2 bg-secondary/50 rounded-lg p-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold truncate">{item.product_name}</p>
+                  <p className="text-[10px] text-muted-foreground">{peso(item.price)} each</p>
+                </div>
+                <p className="text-xs font-bold w-12 text-center">×{item.quantity}</p>
+                <p className="text-xs font-bold w-14 text-right">{peso(item.price * item.quantity)}</p>
+                <button onClick={() => setAddItems(prev => prev.filter((_, i) => i !== idx))} className="text-destructive"><X className="w-3.5 h-3.5" /></button>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-border pt-3 mt-2">
+            <p className="text-xs font-bold mb-2">Add Item</p>
+            <div className="space-y-2">
+              <Input placeholder="Product name" value={addNewName} onChange={e => setAddNewName(e.target.value)} className="h-8 text-xs" list="add-products" />
+              <datalist id="add-products">
+                {products.map(p => <option key={p.name} value={p.name} />)}
+              </datalist>
+              {addNewName && products.some(p => p.name === addNewName) && !addNewPrice && (
+                <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={() => selectAddProduct(addNewName)}>
+                  Auto-fill price from inventory
+                </Button>
+              )}
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Price</label>
+                  <Input type="number" inputMode="decimal" value={addNewPrice} onChange={e => setAddNewPrice(e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Cost</label>
+                  <Input type="number" inputMode="decimal" value={addNewCost} onChange={e => setAddNewCost(e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Qty</label>
+                  <Input type="number" inputMode="decimal" value={addNewQty} onChange={e => setAddNewQty(e.target.value)} className="h-8 text-xs" />
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="w-full text-xs" onClick={addManualItem} disabled={!addNewName.trim()}>
+                <Plus className="w-3 h-3 mr-1" /> Add Item
+              </Button>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-2 mt-2 space-y-1">
+            <div className="flex justify-between text-sm font-bold">
+              <span>Total</span><span className="text-primary">{peso(addTotal)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span>Profit</span><span className="text-success font-semibold">{peso(addProfit)}</span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setAddOpen(false); resetAdd(); }}>Cancel</Button>
+            <Button size="sm" disabled={adding || addItems.length === 0 || !addDate} onClick={handleAddManualSale}>
+              {adding ? 'Saving...' : 'Save Sale'}
             </Button>
           </div>
         </DialogContent>
