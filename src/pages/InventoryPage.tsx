@@ -10,6 +10,9 @@ import { toast } from 'sonner';
 import CategoryCombobox from '@/components/CategoryCombobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { compressImage } from '@/lib/imageOptimize';
+
+const PAGE_SIZE = 20;
 
 const LOW_STOCK = 5;
 const emptyForm = { name: '', brand: '', category: '', stock: '', buyingPrice: '', sellingPrice: '', imageUrl: '' };
