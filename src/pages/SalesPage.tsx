@@ -64,6 +64,16 @@ const SalesPage = () => {
   // Products for autocomplete
   const [products, setProducts] = useState<{ name: string; selling_price: number; buying_price: number }[]>([]);
 
+  // Add manual sale state
+  const [addOpen, setAddOpen] = useState(false);
+  const [addDate, setAddDate] = useState(getLocalDateStr());
+  const [addItems, setAddItems] = useState<TransactionItem[]>([]);
+  const [addNewName, setAddNewName] = useState('');
+  const [addNewPrice, setAddNewPrice] = useState('');
+  const [addNewCost, setAddNewCost] = useState('');
+  const [addNewQty, setAddNewQty] = useState('1');
+  const [adding, setAdding] = useState(false);
+
   const loadTransactions = useCallback(async () => {
     if (!user) return;
     // Single nested query: avoids the 1000-row default cap on a separate
