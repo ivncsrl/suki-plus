@@ -324,7 +324,12 @@ const SalesPage = () => {
 
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
-      <h1 className="text-xl font-extrabold mb-3">📊 Sales Summary</h1>
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-xl font-extrabold">📊 Sales Summary</h1>
+        <Button size="sm" className="h-8 text-xs" onClick={() => { resetAdd(); setAddOpen(true); }}>
+          <Plus className="w-3.5 h-3.5 mr-1" /> Add Sale
+        </Button>
+      </div>
 
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-card rounded-lg p-3 border border-border">
