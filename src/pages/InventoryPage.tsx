@@ -77,6 +77,7 @@ const InventoryPage = () => {
   const [historyByProduct, setHistoryByProduct] = useState<Record<string, HistoryEntry[]>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showWebPicker, setShowWebPicker] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const load = useCallback(async () => {
     if (!user) return;
