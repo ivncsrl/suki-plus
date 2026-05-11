@@ -123,6 +123,10 @@ const SalesPage = () => {
     });
   }, [transactions, fromDate, toDate, searchQuery]);
 
+  const SALES_PAGE_SIZE = 20;
+  const [salesVisible, setSalesVisible] = useState(SALES_PAGE_SIZE);
+  useEffect(() => { setSalesVisible(SALES_PAGE_SIZE); }, [fromDate, toDate, searchQuery]);
+
   const totalSales = filtered.reduce((s, t) => s + t.total, 0);
   const totalProfit = filtered.reduce((s, t) => s + t.profit, 0);
 
