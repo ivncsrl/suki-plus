@@ -130,12 +130,13 @@ const InventoryPage = () => {
 
   const handleImageUpload = async (file: File) => {
     if (!user) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+    if (file.size > 15 * 1024 * 1024) { toast.error('Image must be under 15MB'); return; }
     setUploadingImage(true);
     try {
-      const ext = file.name.split('.').pop() || 'jpg';
+      const optimized = await compressImage(file);
+      const ext = (optimized.type === 'image/jpeg' ? 'jpg' : optimized.name.split('.').pop()) || 'jpg';
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false });
+      const { error } = await supabase.storage.from('product-images').upload(path, optimized, { upsert: false, contentType: optimized.type });
       if (error) throw error;
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
       setForm(f => ({ ...f, imageUrl: data.publicUrl }));
