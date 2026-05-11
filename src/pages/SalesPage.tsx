@@ -264,6 +264,64 @@ const SalesPage = () => {
     setSaving(false);
   };
 
+  // ---- Add Manual Sale ----
+  const resetAdd = () => {
+    setAddItems([]); setAddNewName(''); setAddNewPrice(''); setAddNewCost(''); setAddNewQty('1');
+    setAddDate(getLocalDateStr());
+  };
+
+  const addManualItem = () => {
+    if (!addNewName.trim()) return;
+    const price = parseFloat(addNewPrice) || 0;
+    const cost = parseFloat(addNewCost) || 0;
+    const qty = parseFloat(addNewQty) || 1;
+    setAddItems(prev => [...prev, { product_name: addNewName.trim(), price, cost, quantity: qty }]);
+    setAddNewName(''); setAddNewPrice(''); setAddNewCost(''); setAddNewQty('1');
+  };
+
+  const selectAddProduct = (name: string) => {
+    const p = products.find(pr => pr.name === name);
+    if (p) {
+      setAddNewName(p.name);
+      setAddNewPrice(String(p.selling_price));
+      setAddNewCost(String(p.buying_price));
+    }
+  };
+
+  const addTotal = addItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const addProfit = addItems.reduce((s, i) => s + (i.price - i.cost) * i.quantity, 0);
+
+  const handleAddManualSale = async () => {
+    if (!user || addItems.length === 0) return;
+    setAdding(true);
+    try {
+      // Use noon local time on the selected date to avoid timezone/business-day edge cases
+      const createdAt = new Date(addDate + 'T12:00:00').toISOString();
+      const { data: txn, error: txnErr } = await supabase
+        .from('transactions')
+        .insert({ user_id: user.id, total: addTotal, profit: addProfit, paid: addTotal, created_at: createdAt })
+        .select('id')
+        .single();
+      if (txnErr || !txn) throw txnErr;
+      const items = addItems.map(i => ({
+        transaction_id: txn.id,
+        product_name: i.product_name,
+        quantity: i.quantity,
+        price: i.price,
+        cost: i.cost,
+      }));
+      const { error: itErr } = await supabase.from('transaction_items').insert(items);
+      if (itErr) throw itErr;
+      toast.success('Manual sale added');
+      setAddOpen(false);
+      resetAdd();
+      loadTransactions();
+    } catch {
+      toast.error('Failed to add sale');
+    }
+    setAdding(false);
+  };
+
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <h1 className="text-xl font-extrabold mb-3">📊 Sales Summary</h1>
