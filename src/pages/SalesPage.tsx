@@ -565,6 +565,80 @@ const SalesPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Manual Sale Dialog */}
+      <Dialog open={addOpen} onOpenChange={open => { if (!open) { setAddOpen(false); resetAdd(); } }}>
+        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Add Manual Sale</DialogTitle></DialogHeader>
+
+          <div>
+            <label className="text-[10px] text-muted-foreground font-semibold">Sale Date</label>
+            <Input type="date" value={addDate} onChange={e => setAddDate(e.target.value)} className="h-9 text-sm" />
+          </div>
+
+          <div className="space-y-2">
+            {addItems.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2 bg-secondary/50 rounded-lg p-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold truncate">{item.product_name}</p>
+                  <p className="text-[10px] text-muted-foreground">{peso(item.price)} each</p>
+                </div>
+                <p className="text-xs font-bold w-12 text-center">×{item.quantity}</p>
+                <p className="text-xs font-bold w-14 text-right">{peso(item.price * item.quantity)}</p>
+                <button onClick={() => setAddItems(prev => prev.filter((_, i) => i !== idx))} className="text-destructive"><X className="w-3.5 h-3.5" /></button>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-border pt-3 mt-2">
+            <p className="text-xs font-bold mb-2">Add Item</p>
+            <div className="space-y-2">
+              <Input placeholder="Product name" value={addNewName} onChange={e => setAddNewName(e.target.value)} className="h-8 text-xs" list="add-products" />
+              <datalist id="add-products">
+                {products.map(p => <option key={p.name} value={p.name} />)}
+              </datalist>
+              {addNewName && products.some(p => p.name === addNewName) && !addNewPrice && (
+                <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={() => selectAddProduct(addNewName)}>
+                  Auto-fill price from inventory
+                </Button>
+              )}
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Price</label>
+                  <Input type="number" inputMode="decimal" value={addNewPrice} onChange={e => setAddNewPrice(e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Cost</label>
+                  <Input type="number" inputMode="decimal" value={addNewCost} onChange={e => setAddNewCost(e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Qty</label>
+                  <Input type="number" inputMode="decimal" value={addNewQty} onChange={e => setAddNewQty(e.target.value)} className="h-8 text-xs" />
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="w-full text-xs" onClick={addManualItem} disabled={!addNewName.trim()}>
+                <Plus className="w-3 h-3 mr-1" /> Add Item
+              </Button>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-2 mt-2 space-y-1">
+            <div className="flex justify-between text-sm font-bold">
+              <span>Total</span><span className="text-primary">{peso(addTotal)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span>Profit</span><span className="text-success font-semibold">{peso(addProfit)}</span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setAddOpen(false); resetAdd(); }}>Cancel</Button>
+            <Button size="sm" disabled={adding || addItems.length === 0 || !addDate} onClick={handleAddManualSale}>
+              {adding ? 'Saving...' : 'Save Sale'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
