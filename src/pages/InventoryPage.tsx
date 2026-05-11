@@ -124,6 +124,8 @@ const InventoryPage = () => {
     return result;
   }, [products, search, categoryFilter]);
 
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, categoryFilter]);
+
   const totalValue = products.reduce((s, p) => s + p.buying_price * p.stock, 0);
   const totalRevenue = products.reduce((s, p) => s + p.selling_price * p.stock, 0);
   const totalProfit = totalRevenue - totalValue;
