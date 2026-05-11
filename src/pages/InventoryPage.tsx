@@ -405,7 +405,7 @@ const InventoryPage = () => {
       <div className="space-y-2">
         {products.length === 0 && <p className="text-center text-muted-foreground py-8">No products yet. Tap "Add" to start!</p>}
         {filtered.length === 0 && products.length > 0 && <p className="text-center text-muted-foreground py-4">No matching products</p>}
-        {filtered.map(p => {
+        {filtered.slice(0, visibleCount).map(p => {
           const isExpanded = expandedId === p.id;
           return (
             <div key={p.id} className={`bg-card rounded-xl border ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} shadow-mui-1 hover:shadow-mui-2 transition-shadow overflow-hidden`}>
@@ -424,7 +424,7 @@ const InventoryPage = () => {
                       className="w-5 h-5 rounded border-border accent-primary shrink-0"
                     />
                     {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded-lg object-cover border border-border shrink-0" />
+                      <img src={p.image_url} alt={p.name} loading="lazy" decoding="async" className="w-16 h-16 rounded-lg object-cover border border-border shrink-0" />
                     ) : (
                       <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
                         <ImagePlus className="w-6 h-6 text-muted-foreground" />
@@ -471,6 +471,14 @@ const InventoryPage = () => {
             </div>
           );
         })}
+        {filtered.length > visibleCount && (
+          <div className="pt-2 flex flex-col items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => setVisibleCount(c => c + PAGE_SIZE)}>
+              Load more ({filtered.length - visibleCount} remaining)
+            </Button>
+            <p className="text-[10px] text-muted-foreground">Showing {Math.min(visibleCount, filtered.length)} of {filtered.length}</p>
+          </div>
+        )}
       </div>
 
       {showForm && (
