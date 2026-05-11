@@ -123,6 +123,10 @@ const SalesPage = () => {
     });
   }, [transactions, fromDate, toDate, searchQuery]);
 
+  const SALES_PAGE_SIZE = 20;
+  const [salesVisible, setSalesVisible] = useState(SALES_PAGE_SIZE);
+  useEffect(() => { setSalesVisible(SALES_PAGE_SIZE); }, [fromDate, toDate, searchQuery]);
+
   const totalSales = filtered.reduce((s, t) => s + t.total, 0);
   const totalProfit = filtered.reduce((s, t) => s + t.profit, 0);
 
@@ -442,7 +446,7 @@ const SalesPage = () => {
 
       <div className="space-y-2">
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No transactions yet</p>}
-        {filtered.map(t => (
+        {filtered.slice(0, salesVisible).map(t => (
           <div key={t.id} className="bg-card rounded-xl border border-border p-3">
             <div className="flex justify-between items-center mb-1.5">
               <span className="text-[11px] text-muted-foreground flex items-center gap-1">
@@ -467,6 +471,14 @@ const SalesPage = () => {
             <div className="text-xs font-semibold text-success mt-1">Profit: {peso(t.profit)}</div>
           </div>
         ))}
+        {filtered.length > salesVisible && (
+          <div className="pt-2 flex flex-col items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => setSalesVisible(c => c + SALES_PAGE_SIZE)}>
+              Load more ({filtered.length - salesVisible} remaining)
+            </Button>
+            <p className="text-[10px] text-muted-foreground">Showing {Math.min(salesVisible, filtered.length)} of {filtered.length}</p>
+          </div>
+        )}
       </div>
 
       {/* Delete Dialog */}

@@ -10,6 +10,9 @@ import { toast } from 'sonner';
 import CategoryCombobox from '@/components/CategoryCombobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { compressImage } from '@/lib/imageOptimize';
+
+const PAGE_SIZE = 20;
 
 const LOW_STOCK = 5;
 const emptyForm = { name: '', brand: '', category: '', stock: '', buyingPrice: '', sellingPrice: '', imageUrl: '' };
@@ -74,6 +77,7 @@ const InventoryPage = () => {
   const [historyByProduct, setHistoryByProduct] = useState<Record<string, HistoryEntry[]>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showWebPicker, setShowWebPicker] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -120,18 +124,21 @@ const InventoryPage = () => {
     return result;
   }, [products, search, categoryFilter]);
 
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, categoryFilter]);
+
   const totalValue = products.reduce((s, p) => s + p.buying_price * p.stock, 0);
   const totalRevenue = products.reduce((s, p) => s + p.selling_price * p.stock, 0);
   const totalProfit = totalRevenue - totalValue;
 
   const handleImageUpload = async (file: File) => {
     if (!user) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+    if (file.size > 15 * 1024 * 1024) { toast.error('Image must be under 15MB'); return; }
     setUploadingImage(true);
     try {
-      const ext = file.name.split('.').pop() || 'jpg';
+      const optimized = await compressImage(file);
+      const ext = (optimized.type === 'image/jpeg' ? 'jpg' : optimized.name.split('.').pop()) || 'jpg';
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false });
+      const { error } = await supabase.storage.from('product-images').upload(path, optimized, { upsert: false, contentType: optimized.type });
       if (error) throw error;
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
       setForm(f => ({ ...f, imageUrl: data.publicUrl }));
@@ -400,7 +407,7 @@ const InventoryPage = () => {
       <div className="space-y-2">
         {products.length === 0 && <p className="text-center text-muted-foreground py-8">No products yet. Tap "Add" to start!</p>}
         {filtered.length === 0 && products.length > 0 && <p className="text-center text-muted-foreground py-4">No matching products</p>}
-        {filtered.map(p => {
+        {filtered.slice(0, visibleCount).map(p => {
           const isExpanded = expandedId === p.id;
           return (
             <div key={p.id} className={`bg-card rounded-xl border ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} shadow-mui-1 hover:shadow-mui-2 transition-shadow overflow-hidden`}>
@@ -419,7 +426,7 @@ const InventoryPage = () => {
                       className="w-5 h-5 rounded border-border accent-primary shrink-0"
                     />
                     {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded-lg object-cover border border-border shrink-0" />
+                      <img src={p.image_url} alt={p.name} loading="lazy" decoding="async" className="w-16 h-16 rounded-lg object-cover border border-border shrink-0" />
                     ) : (
                       <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
                         <ImagePlus className="w-6 h-6 text-muted-foreground" />
@@ -466,6 +473,14 @@ const InventoryPage = () => {
             </div>
           );
         })}
+        {filtered.length > visibleCount && (
+          <div className="pt-2 flex flex-col items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => setVisibleCount(c => c + PAGE_SIZE)}>
+              Load more ({filtered.length - visibleCount} remaining)
+            </Button>
+            <p className="text-[10px] text-muted-foreground">Showing {Math.min(visibleCount, filtered.length)} of {filtered.length}</p>
+          </div>
+        )}
       </div>
 
       {showForm && (
