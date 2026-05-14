@@ -4,8 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Lock, Mail, ImageIcon, Trash2, Copy, Loader2, X } from 'lucide-react';
+import { LogOut, Lock, Mail, ImageIcon, Trash2, Copy, Loader2, X, Filter } from 'lucide-react';
 import { toast } from 'sonner';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface MediaItem {
   name: string;
