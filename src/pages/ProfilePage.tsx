@@ -4,8 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Lock, Mail, ImageIcon, Trash2, Copy, Loader2, X } from 'lucide-react';
+import { LogOut, Lock, Mail, ImageIcon, Trash2, Copy, Loader2, X, Filter } from 'lucide-react';
 import { toast } from 'sonner';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface MediaItem {
   name: string;
@@ -33,6 +34,7 @@ const ProfilePage = () => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [preview, setPreview] = useState<MediaItem | null>(null);
+  const [sizeFilter, setSizeFilter] = useState<'all' | 'small' | 'medium' | 'large'>('all');
 
   const handleChangePassword = async () => {
     if (!newPassword.trim()) return toast.error('Enter a new password');
@@ -104,6 +106,17 @@ const ProfilePage = () => {
 
   const totalSize = media.reduce((s, m) => s + m.size, 0);
 
+  const filteredMedia = media.filter(m => {
+    if (sizeFilter === 'all') return true;
+    const kb = m.size / 1024;
+    if (sizeFilter === 'small') return kb < 100;
+    if (sizeFilter === 'medium') return kb >= 100 && kb < 1024;
+    if (sizeFilter === 'large') return kb >= 1024;
+    return true;
+  });
+
+  const filteredSize = filteredMedia.reduce((s, m) => s + m.size, 0);
+
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <h1 className="text-xl font-extrabold mb-4">👤 Profile</h1>
@@ -164,10 +177,25 @@ const ProfilePage = () => {
           </DialogHeader>
 
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{media.length} image{media.length === 1 ? '' : 's'} · {formatBytes(totalSize)}</span>
+            <span>{filteredMedia.length} image{filteredMedia.length === 1 ? '' : 's'} · {formatBytes(filteredSize)}</span>
             <Button size="sm" variant="ghost" className="h-7" onClick={loadMedia} disabled={mediaLoading}>
               {mediaLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Refresh'}
             </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+            <ToggleGroup
+              type="single"
+              value={sizeFilter}
+              onValueChange={(v) => v && setSizeFilter(v as typeof sizeFilter)}
+              className="flex-wrap"
+            >
+              <ToggleGroupItem value="all" size="sm" className="text-xs h-7">All</ToggleGroupItem>
+              <ToggleGroupItem value="small" size="sm" className="text-xs h-7">&lt;100 KB</ToggleGroupItem>
+              <ToggleGroupItem value="medium" size="sm" className="text-xs h-7">100 KB – 1 MB</ToggleGroupItem>
+              <ToggleGroupItem value="large" size="sm" className="text-xs h-7">&gt;1 MB</ToggleGroupItem>
+            </ToggleGroup>
           </div>
 
           {mediaLoading ? (
@@ -176,11 +204,13 @@ const ProfilePage = () => {
                 <div key={i} className="aspect-square rounded-md bg-muted animate-pulse" />
               ))}
             </div>
-          ) : media.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No uploaded images yet.</p>
+          ) : filteredMedia.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              {media.length === 0 ? 'No uploaded images yet.' : 'No images match this size filter.'}
+            </p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {media.map(m => (
+              {filteredMedia.map(m => (
                 <div key={m.path} className="group relative aspect-square rounded-md overflow-hidden border border-border bg-muted">
                   <button
                     type="button"
