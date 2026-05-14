@@ -106,6 +106,17 @@ const ProfilePage = () => {
 
   const totalSize = media.reduce((s, m) => s + m.size, 0);
 
+  const filteredMedia = media.filter(m => {
+    if (sizeFilter === 'all') return true;
+    const kb = m.size / 1024;
+    if (sizeFilter === 'small') return kb < 100;
+    if (sizeFilter === 'medium') return kb >= 100 && kb < 1024;
+    if (sizeFilter === 'large') return kb >= 1024;
+    return true;
+  });
+
+  const filteredSize = filteredMedia.reduce((s, m) => s + m.size, 0);
+
   return (
     <div className="pb-20 max-w-3xl mx-auto px-4 pt-4 animate-fade-in">
       <h1 className="text-xl font-extrabold mb-4">👤 Profile</h1>
