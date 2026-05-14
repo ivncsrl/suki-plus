@@ -34,6 +34,7 @@ const ProfilePage = () => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [preview, setPreview] = useState<MediaItem | null>(null);
+  const [sizeFilter, setSizeFilter] = useState<'all' | 'small' | 'medium' | 'large'>('all');
 
   const handleChangePassword = async () => {
     if (!newPassword.trim()) return toast.error('Enter a new password');
