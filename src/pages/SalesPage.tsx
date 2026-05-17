@@ -275,6 +275,42 @@ const SalesPage = () => {
   const resetAdd = () => {
     setAddItems([]); setAddNewName(''); setAddNewPrice(''); setAddNewCost(''); setAddNewQty('1');
     setAddDate(getLocalDateStr());
+    setAddSearch(''); setAddManualMode(false); setAddQtyInputs({});
+  };
+
+  const addProductToCart = (p: { name: string; selling_price: number; buying_price: number }) => {
+    setAddItems(prev => {
+      const existing = prev.findIndex(i => i.product_name === p.name && i.price === p.selling_price && i.cost === p.buying_price);
+      if (existing >= 0) {
+        return prev.map((it, i) => i === existing ? { ...it, quantity: Math.round((it.quantity + 1) * 100) / 100 } : it);
+      }
+      return [...prev, { product_name: p.name, price: p.selling_price, cost: p.buying_price, quantity: 1 }];
+    });
+  };
+
+  const updateAddItemQty = (idx: number, delta: number) => {
+    setAddQtyInputs(prev => { const n = { ...prev }; delete n[idx]; return n; });
+    setAddItems(prev => prev.map((it, i) => {
+      if (i !== idx) return it;
+      const q = Math.round((it.quantity + delta) * 100) / 100;
+      return q <= 0 ? it : { ...it, quantity: q };
+    }));
+  };
+
+  const setAddItemQty = (idx: number, val: string) => {
+    setAddQtyInputs(prev => ({ ...prev, [idx]: val }));
+    const num = parseFloat(val);
+    if (!isNaN(num) && num > 0) {
+      setAddItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: num } : it));
+    }
+  };
+
+  const handleAddQtyBlur = (idx: number) => {
+    const val = parseFloat(addQtyInputs[idx] || '');
+    setAddQtyInputs(prev => { const n = { ...prev }; delete n[idx]; return n; });
+    if (isNaN(val) || val <= 0) {
+      setAddItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: 1 } : it));
+    }
   };
 
   const addManualItem = () => {
@@ -286,14 +322,15 @@ const SalesPage = () => {
     setAddNewName(''); setAddNewPrice(''); setAddNewCost(''); setAddNewQty('1');
   };
 
-  const selectAddProduct = (name: string) => {
-    const p = products.find(pr => pr.name === name);
-    if (p) {
-      setAddNewName(p.name);
-      setAddNewPrice(String(p.selling_price));
-      setAddNewCost(String(p.buying_price));
-    }
-  };
+  const addProductsFiltered = useMemo(() => {
+    const q = addSearch.toLowerCase().trim();
+    if (!q) return [] as typeof products;
+    return products.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.brand?.toLowerCase().includes(q) ?? false) ||
+      (p.category?.toLowerCase().includes(q) ?? false)
+    ).slice(0, 24);
+  }, [products, addSearch]);
 
   const addTotal = addItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const addProfit = addItems.reduce((s, i) => s + (i.price - i.cost) * i.quantity, 0);
