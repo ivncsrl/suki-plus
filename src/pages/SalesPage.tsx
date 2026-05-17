@@ -111,8 +111,8 @@ const SalesPage = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('products').select('name, selling_price, buying_price').eq('user_id', user.id)
-      .then(({ data }) => setProducts((data || []).map(p => ({ name: p.name, selling_price: Number(p.selling_price), buying_price: Number(p.buying_price) }))));
+    supabase.from('products').select('name, selling_price, buying_price, image_url, brand, category').eq('user_id', user.id)
+      .then(({ data }) => setProducts((data || []).map(p => ({ name: p.name, selling_price: Number(p.selling_price), buying_price: Number(p.buying_price), image_url: p.image_url, brand: p.brand, category: p.category }))));
   }, [user]);
 
   const filtered = useMemo(() => {
