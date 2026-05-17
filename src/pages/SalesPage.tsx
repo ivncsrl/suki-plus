@@ -62,17 +62,20 @@ const SalesPage = () => {
   const [saving, setSaving] = useState(false);
 
   // Products for autocomplete
-  const [products, setProducts] = useState<{ name: string; selling_price: number; buying_price: number }[]>([]);
+  const [products, setProducts] = useState<{ name: string; selling_price: number; buying_price: number; image_url: string | null; brand: string | null; category: string | null }[]>([]);
 
   // Add manual sale state
   const [addOpen, setAddOpen] = useState(false);
   const [addDate, setAddDate] = useState(getLocalDateStr());
   const [addItems, setAddItems] = useState<TransactionItem[]>([]);
+  const [addSearch, setAddSearch] = useState('');
+  const [addManualMode, setAddManualMode] = useState(false);
   const [addNewName, setAddNewName] = useState('');
   const [addNewPrice, setAddNewPrice] = useState('');
   const [addNewCost, setAddNewCost] = useState('');
   const [addNewQty, setAddNewQty] = useState('1');
   const [adding, setAdding] = useState(false);
+  const [addQtyInputs, setAddQtyInputs] = useState<Record<number, string>>({});
 
   const loadTransactions = useCallback(async () => {
     if (!user) return;
