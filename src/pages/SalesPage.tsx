@@ -618,76 +618,137 @@ const SalesPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Manual Sale Dialog */}
+      {/* Add Manual Sale Dialog — POS-style */}
       <Dialog open={addOpen} onOpenChange={open => { if (!open) { setAddOpen(false); resetAdd(); } }}>
-        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader><DialogTitle>Add Manual Sale</DialogTitle></DialogHeader>
 
-          <div>
-            <label className="text-[10px] text-muted-foreground font-semibold">Sale Date</label>
-            <Input type="date" value={addDate} onChange={e => setAddDate(e.target.value)} className="h-9 text-sm" />
-          </div>
-
-          <div className="space-y-2">
-            {addItems.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-2 bg-secondary/50 rounded-lg p-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate">{item.product_name}</p>
-                  <p className="text-[10px] text-muted-foreground">{peso(item.price)} each</p>
-                </div>
-                <p className="text-xs font-bold w-12 text-center">×{item.quantity}</p>
-                <p className="text-xs font-bold w-14 text-right">{peso(item.price * item.quantity)}</p>
-                <button onClick={() => setAddItems(prev => prev.filter((_, i) => i !== idx))} className="text-destructive"><X className="w-3.5 h-3.5" /></button>
+          <div className="grid sm:grid-cols-[1fr_300px] gap-4">
+            {/* LEFT: Search + product grid */}
+            <div className="min-w-0">
+              <div>
+                <label className="text-[10px] text-muted-foreground font-semibold">Sale Date</label>
+                <Input type="date" value={addDate} onChange={e => setAddDate(e.target.value)} className="h-9 text-sm mb-3" />
               </div>
-            ))}
-          </div>
 
-          <div className="border-t border-border pt-3 mt-2">
-            <p className="text-xs font-bold mb-2">Add Item</p>
-            <div className="space-y-2">
-              <Input placeholder="Product name" value={addNewName} onChange={e => setAddNewName(e.target.value)} className="h-8 text-xs" list="add-products" />
-              <datalist id="add-products">
-                {products.map(p => <option key={p.name} value={p.name} />)}
-              </datalist>
-              {addNewName && products.some(p => p.name === addNewName) && !addNewPrice && (
-                <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={() => selectAddProduct(addNewName)}>
-                  Auto-fill price from inventory
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search products to add..."
+                  value={addSearch}
+                  onChange={e => setAddSearch(e.target.value)}
+                  className="pl-9 h-9 text-sm bg-card"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[40vh] overflow-y-auto pr-1">
+                {addProductsFiltered.map(p => (
+                  <button
+                    key={p.name}
+                    type="button"
+                    onClick={() => addProductToCart(p)}
+                    className="group bg-card rounded-xl p-2 text-left border border-border hover:border-primary hover:shadow-md active:scale-[0.98] transition-all flex flex-col"
+                  >
+                    <div className="aspect-square w-full rounded-lg bg-muted mb-2 overflow-hidden flex items-center justify-center">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <Package className="w-6 h-6 text-muted-foreground/50" />
+                      )}
+                    </div>
+                    {p.brand && (
+                      <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wide truncate">{p.brand}</p>
+                    )}
+                    <p className="text-xs font-bold leading-tight line-clamp-2 mb-1">{p.name}</p>
+                    <span className="mt-auto text-sm font-extrabold text-primary">{peso(p.selling_price)}</span>
+                  </button>
+                ))}
+                {addProductsFiltered.length === 0 && (
+                  <p className="col-span-full text-center text-muted-foreground text-xs py-6">
+                    {addSearch.trim() ? 'No products found' : 'Start typing to search products'}
+                  </p>
+                )}
+              </div>
+
+              {/* Manual item toggle */}
+              <div className="mt-3 border-t border-border pt-3">
+                <Button type="button" variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={() => setAddManualMode(m => !m)}>
+                  {addManualMode ? '− Hide manual item' : '+ Add item not in inventory'}
                 </Button>
-              )}
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-[10px] text-muted-foreground">Price</label>
-                  <Input type="number" inputMode="decimal" value={addNewPrice} onChange={e => setAddNewPrice(e.target.value)} className="h-8 text-xs" />
-                </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground">Cost</label>
-                  <Input type="number" inputMode="decimal" value={addNewCost} onChange={e => setAddNewCost(e.target.value)} className="h-8 text-xs" />
-                </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground">Qty</label>
-                  <Input type="number" inputMode="decimal" value={addNewQty} onChange={e => setAddNewQty(e.target.value)} className="h-8 text-xs" />
+                {addManualMode && (
+                  <div className="space-y-2 mt-2">
+                    <Input placeholder="Product name" value={addNewName} onChange={e => setAddNewName(e.target.value)} className="h-8 text-xs" />
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground">Price</label>
+                        <Input type="number" inputMode="decimal" value={addNewPrice} onChange={e => setAddNewPrice(e.target.value)} className="h-8 text-xs" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground">Cost</label>
+                        <Input type="number" inputMode="decimal" value={addNewCost} onChange={e => setAddNewCost(e.target.value)} className="h-8 text-xs" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground">Qty</label>
+                        <Input type="number" inputMode="decimal" value={addNewQty} onChange={e => setAddNewQty(e.target.value)} className="h-8 text-xs" />
+                      </div>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" className="w-full text-xs" onClick={addManualItem} disabled={!addNewName.trim()}>
+                      <Plus className="w-3 h-3 mr-1" /> Add Item
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT: Cart */}
+            <aside className="space-y-3">
+              <div className="bg-card rounded-2xl border border-border p-3">
+                <h2 className="font-bold text-sm mb-2">Cart ({addItems.length})</h2>
+                {addItems.length === 0 ? (
+                  <p className="text-muted-foreground text-xs text-center py-6">Tap a product to add</p>
+                ) : (
+                  <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                    {addItems.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold truncate">{item.product_name}</p>
+                          <p className="text-[10px] text-muted-foreground">{peso(item.price)} each</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => updateAddItemQty(idx, -0.25)} className="w-6 h-6 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={addQtyInputs[idx] !== undefined ? addQtyInputs[idx] : String(item.quantity)}
+                            onChange={e => setAddItemQty(idx, e.target.value)}
+                            onBlur={() => handleAddQtyBlur(idx)}
+                            className="w-10 text-center text-xs font-bold bg-background border border-border rounded-md h-6"
+                          />
+                          <button type="button" onClick={() => updateAddItemQty(idx, 0.25)} className="w-6 h-6 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
+                        </div>
+                        <p className="text-xs font-bold w-14 text-right">{peso(item.price * item.quantity)}</p>
+                        <button type="button" onClick={() => setAddItems(prev => prev.filter((_, i) => i !== idx))} className="text-destructive active:scale-90"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="border-t border-border mt-3 pt-2 space-y-1">
+                  <div className="flex justify-between text-sm font-bold">
+                    <span>Total</span><span className="text-primary">{peso(addTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span>Profit</span><span className="text-success font-semibold">{peso(addProfit)}</span>
+                  </div>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="w-full text-xs" onClick={addManualItem} disabled={!addNewName.trim()}>
-                <Plus className="w-3 h-3 mr-1" /> Add Item
-              </Button>
-            </div>
-          </div>
 
-          <div className="border-t border-border pt-2 mt-2 space-y-1">
-            <div className="flex justify-between text-sm font-bold">
-              <span>Total</span><span className="text-primary">{peso(addTotal)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span>Profit</span><span className="text-success font-semibold">{peso(addProfit)}</span>
-            </div>
-          </div>
-
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setAddOpen(false); resetAdd(); }}>Cancel</Button>
-            <Button size="sm" disabled={adding || addItems.length === 0 || !addDate} onClick={handleAddManualSale}>
-              {adding ? 'Saving...' : 'Save Sale'}
-            </Button>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" size="sm" onClick={() => { setAddOpen(false); resetAdd(); }}>Cancel</Button>
+                <Button size="sm" disabled={adding || addItems.length === 0 || !addDate} onClick={handleAddManualSale}>
+                  {adding ? 'Saving...' : 'Save Sale'}
+                </Button>
+              </div>
+            </aside>
           </div>
         </DialogContent>
       </Dialog>
