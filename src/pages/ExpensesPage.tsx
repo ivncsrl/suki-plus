@@ -23,12 +23,25 @@ const ExpensesPage = () => {
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [{ data: exp }, { data: txns }] = await Promise.all([
-      supabase.from('expenses').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-      supabase.from('transactions').select('total').eq('user_id', user.id),
-    ]);
+    const { data: exp } = await supabase.from('expenses').select('*').eq('user_id', user.id).order('date', { ascending: false });
     setExpenses((exp || []).map(e => ({ ...e, amount: Number(e.amount) })));
-    setTotalSales((txns || []).reduce((s, t) => s + Number(t.total), 0));
+
+    // Paginate transactions to avoid the 1000-row default limit
+    const PAGE = 1000;
+    let from = 0;
+    let sum = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('total')
+        .eq('user_id', user.id)
+        .range(from, from + PAGE - 1);
+      if (error || !data) break;
+      sum += data.reduce((s, t) => s + Number(t.total), 0);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    setTotalSales(sum);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
