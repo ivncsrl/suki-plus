@@ -47,6 +47,8 @@ const POSPage = () => {
       buying_price: Number(p.buying_price),
       selling_price: Number(p.selling_price),
       image_url: p.image_url,
+      package_type: p.package_type,
+      size_value: p.size_value,
     })));
   }, [user]);
 
