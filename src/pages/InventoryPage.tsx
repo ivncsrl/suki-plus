@@ -219,6 +219,8 @@ const InventoryPage = () => {
             buying_price: product.buying_price,
             selling_price: product.selling_price,
             image_url: product.image_url,
+            package_type: product.package_type,
+            size_value: product.size_value,
           });
           load();
           toast.success(`"${product.name}" restored`);
