@@ -192,6 +192,8 @@ const InventoryPage = () => {
       buyingPrice: String(p.buying_price),
       sellingPrice: String(p.selling_price),
       imageUrl: p.image_url || '',
+      packageType: p.package_type || '',
+      sizeValue: p.size_value || '',
     });
     setEditId(p.id); setShowForm(true);
   };
