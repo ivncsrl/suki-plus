@@ -165,6 +165,8 @@ const InventoryPage = () => {
         buying_price: parseFloat(form.buyingPrice) || 0,
         selling_price: parseFloat(form.sellingPrice) || 0,
         image_url: form.imageUrl || null,
+        package_type: form.packageType.trim() || null,
+        size_value: form.sizeValue.trim() || null,
       };
       if (editId) {
         const { error } = await supabase.from('products').update(payload).eq('id', editId);
