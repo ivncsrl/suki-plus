@@ -16,6 +16,8 @@ interface Product {
   buying_price: number;
   selling_price: number;
   image_url: string | null;
+  package_type: string | null;
+  size_value: string | null;
 }
 
 interface CartItem {
@@ -45,6 +47,8 @@ const POSPage = () => {
       buying_price: Number(p.buying_price),
       selling_price: Number(p.selling_price),
       image_url: p.image_url,
+      package_type: p.package_type,
+      size_value: p.size_value,
     })));
   }, [user]);
 
@@ -174,7 +178,12 @@ const POSPage = () => {
                     {p.brand}
                   </p>
                 )}
-                <p className="text-sm font-bold leading-tight line-clamp-2 mb-1.5 min-h-[2.5rem]">{p.name}</p>
+                <p className="text-sm font-bold leading-tight line-clamp-2 mb-0.5">{p.name}</p>
+                {(p.package_type || p.size_value) && (
+                  <p className="text-[10px] text-muted-foreground mb-1.5">
+                    {[p.package_type, p.size_value].filter(Boolean).join(' · ')}
+                  </p>
+                )}
                 <div className="mt-auto flex items-end justify-between gap-2">
                   <span className="text-base font-extrabold text-primary">{peso(p.selling_price)}</span>
                   <span className="text-[10px] text-muted-foreground font-semibold">Stock: {p.stock}</span>
@@ -205,7 +214,12 @@ const POSPage = () => {
                   <div key={c.product.id} className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{c.product.name}</p>
-                      <p className="text-xs text-muted-foreground">{peso(c.product.selling_price)} each</p>
+                      <p className="text-xs text-muted-foreground">
+                        {peso(c.product.selling_price)} each
+                        {(c.product.package_type || c.product.size_value) && (
+                          <span className="ml-1.5">· {[c.product.package_type, c.product.size_value].filter(Boolean).join(' · ')}</span>
+                        )}
+                      </p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button onClick={() => updateQty(c.product.id, -0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
