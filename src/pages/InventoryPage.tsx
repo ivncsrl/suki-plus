@@ -15,7 +15,9 @@ import { compressImage } from '@/lib/imageOptimize';
 const PAGE_SIZE = 20;
 
 const LOW_STOCK = 5;
-const emptyForm = { name: '', brand: '', category: '', stock: '', buyingPrice: '', sellingPrice: '', imageUrl: '' };
+const emptyForm = { name: '', brand: '', category: '', stock: '', buyingPrice: '', sellingPrice: '', imageUrl: '', packageType: '', sizeValue: '' };
+
+const PACKAGE_TYPES = ['Can', 'Bottle', 'Pouch', 'Sachet', 'Pack', 'Box', 'Piece', 'Other'];
 
 interface Product {
   id: string;
@@ -26,6 +28,8 @@ interface Product {
   buying_price: number;
   selling_price: number;
   image_url: string | null;
+  package_type: string | null;
+  size_value: string | null;
   price_updated_at: string | null;
   stock_updated_at: string | null;
   created_at: string;
@@ -161,6 +165,8 @@ const InventoryPage = () => {
         buying_price: parseFloat(form.buyingPrice) || 0,
         selling_price: parseFloat(form.sellingPrice) || 0,
         image_url: form.imageUrl || null,
+        package_type: form.packageType.trim() || null,
+        size_value: form.sizeValue.trim() || null,
       };
       if (editId) {
         const { error } = await supabase.from('products').update(payload).eq('id', editId);
@@ -188,6 +194,8 @@ const InventoryPage = () => {
       buyingPrice: String(p.buying_price),
       sellingPrice: String(p.selling_price),
       imageUrl: p.image_url || '',
+      packageType: p.package_type || '',
+      sizeValue: p.size_value || '',
     });
     setEditId(p.id); setShowForm(true);
   };
@@ -211,6 +219,8 @@ const InventoryPage = () => {
             buying_price: product.buying_price,
             selling_price: product.selling_price,
             image_url: product.image_url,
+            package_type: product.package_type,
+            size_value: product.size_value,
           });
           load();
           toast.success(`"${product.name}" restored`);
@@ -231,6 +241,8 @@ const InventoryPage = () => {
       buying_price: p.buying_price,
       selling_price: p.selling_price,
       image_url: p.image_url,
+      package_type: p.package_type,
+      size_value: p.size_value,
     });
     if (error) { toast.error(error.message); return; }
     toast.success(`Duplicated "${p.name}"`);
@@ -442,6 +454,11 @@ const InventoryPage = () => {
                         {p.brand && p.category && <span className="text-muted-foreground"> · </span>}
                         {p.category && <span className="text-muted-foreground">{p.category}</span>}
                       </p>
+                      {(p.package_type || p.size_value) && (
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          {[p.size_value, p.package_type].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <ChevronDown className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -537,6 +554,18 @@ const InventoryPage = () => {
               <Input placeholder="Product name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-11" />
               <Input placeholder="Brand (optional)" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="h-11" />
               <CategoryCombobox value={form.category} onChange={val => setForm({ ...form, category: val })} categories={categories} />
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={form.packageType || '__none__'} onValueChange={val => setForm({ ...form, packageType: val === '__none__' ? '' : val })}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Package type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__"><span className="text-muted-foreground italic">None</span></SelectItem>
+                    {PACKAGE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Input placeholder="Size (e.g. 330ml, 1L, 50g)" value={form.sizeValue} onChange={e => setForm({ ...form, sizeValue: e.target.value })} className="h-11" />
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 <Input type="number" inputMode="decimal" placeholder="Stock" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Buy price" value={form.buyingPrice} onChange={e => setForm({ ...form, buyingPrice: e.target.value })} className="h-11" />
