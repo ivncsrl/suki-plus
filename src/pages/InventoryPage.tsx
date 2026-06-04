@@ -549,6 +549,18 @@ const InventoryPage = () => {
               <Input placeholder="Product name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-11" />
               <Input placeholder="Brand (optional)" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="h-11" />
               <CategoryCombobox value={form.category} onChange={val => setForm({ ...form, category: val })} categories={categories} />
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={form.packageType || '__none__'} onValueChange={val => setForm({ ...form, packageType: val === '__none__' ? '' : val })}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Package type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__"><span className="text-muted-foreground italic">None</span></SelectItem>
+                    {PACKAGE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Input placeholder="Size (e.g. 330ml, 1L, 50g)" value={form.sizeValue} onChange={e => setForm({ ...form, sizeValue: e.target.value })} className="h-11" />
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 <Input type="number" inputMode="decimal" placeholder="Stock" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Buy price" value={form.buyingPrice} onChange={e => setForm({ ...form, buyingPrice: e.target.value })} className="h-11" />
