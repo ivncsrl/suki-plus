@@ -16,6 +16,8 @@ interface Product {
   buying_price: number;
   selling_price: number;
   image_url: string | null;
+  package_type: string | null;
+  size_value: string | null;
 }
 
 interface CartItem {
