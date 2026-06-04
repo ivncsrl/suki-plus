@@ -15,7 +15,9 @@ import { compressImage } from '@/lib/imageOptimize';
 const PAGE_SIZE = 20;
 
 const LOW_STOCK = 5;
-const emptyForm = { name: '', brand: '', category: '', stock: '', buyingPrice: '', sellingPrice: '', imageUrl: '' };
+const emptyForm = { name: '', brand: '', category: '', stock: '', buyingPrice: '', sellingPrice: '', imageUrl: '', packageType: '', sizeValue: '' };
+
+const PACKAGE_TYPES = ['Can', 'Bottle', 'Pouch', 'Sachet', 'Pack', 'Box', 'Piece', 'Other'];
 
 interface Product {
   id: string;
