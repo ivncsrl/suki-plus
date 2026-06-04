@@ -214,7 +214,12 @@ const POSPage = () => {
                   <div key={c.product.id} className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{c.product.name}</p>
-                      <p className="text-xs text-muted-foreground">{peso(c.product.selling_price)} each</p>
+                      <p className="text-xs text-muted-foreground">
+                        {peso(c.product.selling_price)} each
+                        {(c.product.package_type || c.product.size_value) && (
+                          <span className="ml-1.5">· {[c.product.package_type, c.product.size_value].filter(Boolean).join(' · ')}</span>
+                        )}
+                      </p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button onClick={() => updateQty(c.product.id, -0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
