@@ -178,7 +178,12 @@ const POSPage = () => {
                     {p.brand}
                   </p>
                 )}
-                <p className="text-sm font-bold leading-tight line-clamp-2 mb-1.5 min-h-[2.5rem]">{p.name}</p>
+                <p className="text-sm font-bold leading-tight line-clamp-2 mb-0.5">{p.name}</p>
+                {(p.package_type || p.size_value) && (
+                  <p className="text-[10px] text-muted-foreground mb-1.5">
+                    {[p.package_type, p.size_value].filter(Boolean).join(' · ')}
+                  </p>
+                )}
                 <div className="mt-auto flex items-end justify-between gap-2">
                   <span className="text-base font-extrabold text-primary">{peso(p.selling_price)}</span>
                   <span className="text-[10px] text-muted-foreground font-semibold">Stock: {p.stock}</span>
