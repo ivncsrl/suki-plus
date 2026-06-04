@@ -239,6 +239,8 @@ const InventoryPage = () => {
       buying_price: p.buying_price,
       selling_price: p.selling_price,
       image_url: p.image_url,
+      package_type: p.package_type,
+      size_value: p.size_value,
     });
     if (error) { toast.error(error.message); return; }
     toast.success(`Duplicated "${p.name}"`);
