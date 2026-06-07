@@ -581,9 +581,10 @@ const SalesPage = () => {
               </div>
             </div>
             <div className="text-xs text-muted-foreground">
-              {t.items.map((item, i) => (
-                <span key={i}>{item.product_name} ×{item.quantity}{i < t.items.length - 1 ? ', ' : ''}</span>
+              {(itemsByTxn[t.id] || []).map((item, i, arr) => (
+                <span key={i}>{item.product_name} ×{item.quantity}{i < arr.length - 1 ? ', ' : ''}</span>
               ))}
+              {!itemsByTxn[t.id] && <span className="italic opacity-60">Loading items…</span>}
             </div>
             <div className="text-xs font-semibold text-success mt-1">Profit: {peso(t.profit)}</div>
           </div>
