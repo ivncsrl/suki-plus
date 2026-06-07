@@ -214,7 +214,7 @@ const POSPage = () => {
                   <div key={c.product.id} className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{c.product.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         {peso(c.product.selling_price)} each
                         {(c.product.package_type || c.product.size_value) && (
                           <span className="ml-1.5">· {[c.product.package_type, c.product.size_value].filter(Boolean).join(' · ')}</span>
