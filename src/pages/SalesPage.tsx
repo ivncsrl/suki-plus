@@ -282,9 +282,24 @@ const SalesPage = () => {
   };
 
   // ---- Edit ----
-  const openEdit = (t: Transaction) => {
-    setEditTxn(t);
-    setEditItems(t.items.map(i => ({ ...i })));
+  const openEdit = async (t: Transaction) => {
+    let items = itemsByTxn[t.id];
+    if (!items) {
+      const { data } = await supabase
+        .from('transaction_items')
+        .select('id, product_name, quantity, price, cost')
+        .eq('transaction_id', t.id);
+      items = (data || []).map(i => ({
+        id: i.id,
+        product_name: i.product_name,
+        quantity: Number(i.quantity),
+        price: Number(i.price),
+        cost: Number(i.cost),
+      }));
+      setItemsByTxn(prev => ({ ...prev, [t.id]: items! }));
+    }
+    setEditTxn({ ...t, items });
+    setEditItems(items.map(i => ({ ...i })));
     setNewItemName(''); setNewItemPrice(''); setNewItemCost(''); setNewItemQty('1');
     setEditPassword('');
   };
