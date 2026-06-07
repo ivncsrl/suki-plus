@@ -41,6 +41,7 @@ const toBusinessDate = (utc: string) => getBusinessDate(utc);
 const SalesPage = () => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [itemsByTxn, setItemsByTxn] = useState<Record<string, TransactionItem[]>>({});
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,32 +80,35 @@ const SalesPage = () => {
 
   const loadTransactions = useCallback(async () => {
     if (!user) return;
-    // Single nested query: avoids the 1000-row default cap on a separate
-    // transaction_items fetch (which previously caused older transactions
-    // to render with no items in the Sales Summary).
-    const { data: txns, error } = await supabase
-      .from('transactions')
-      .select('id, total, profit, paid, created_at, transaction_items(id, product_name, quantity, price, cost)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error || !txns) return;
-
-    setTransactions(txns.map((t: any) => ({
-      id: t.id,
-      total: Number(t.total),
-      profit: Number(t.profit),
-      paid: Number(t.paid),
-      change: Number(t.paid) - Number(t.total),
-      created_at: t.created_at,
-      items: (t.transaction_items || []).map((i: any) => ({
-        id: i.id,
-        product_name: i.product_name,
-        quantity: Number(i.quantity),
-        price: Number(i.price),
-        cost: Number(i.cost),
-      })),
-    })));
+    // Fetch lightweight summary rows in batches to bypass PostgREST's
+    // 1000-row default cap, so totals/chart include the very first transaction.
+    // Items are NOT fetched here — they're lazy-loaded for visible rows only,
+    // keeping memory/bandwidth low even with thousands of transactions.
+    const PAGE = 1000;
+    const all: Transaction[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('id, total, profit, paid, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error || !data) break;
+      for (const t of data) {
+        all.push({
+          id: t.id,
+          total: Number(t.total),
+          profit: Number(t.profit),
+          paid: Number(t.paid),
+          change: Number(t.paid) - Number(t.total),
+          created_at: t.created_at,
+          items: [],
+        });
+      }
+      if (data.length < PAGE) break;
+    }
+    setTransactions(all);
+    setItemsByTxn({});
   }, [user]);
 
   useEffect(() => { loadTransactions(); }, [loadTransactions]);
@@ -121,14 +125,87 @@ const SalesPage = () => {
       const d = toBusinessDate(t.created_at);
       if (fromDate && d < fromDate) return false;
       if (toDate && d > toDate) return false;
-      if (q && !t.items.some(i => i.product_name.toLowerCase().includes(q))) return false;
+      // Product-name search requires items; only filter when items are loaded.
+      if (q) {
+        const items = itemsByTxn[t.id];
+        if (!items || !items.some(i => i.product_name.toLowerCase().includes(q))) return false;
+      }
       return true;
     });
-  }, [transactions, fromDate, toDate, searchQuery]);
+  }, [transactions, fromDate, toDate, searchQuery, itemsByTxn]);
 
   const SALES_PAGE_SIZE = 20;
   const [salesVisible, setSalesVisible] = useState(SALES_PAGE_SIZE);
   useEffect(() => { setSalesVisible(SALES_PAGE_SIZE); }, [fromDate, toDate, searchQuery]);
+
+  // When searching, load items for ALL transactions in the active date range
+  // so the search can match against product names.
+  useEffect(() => {
+    if (!user || !searchQuery.trim()) return;
+    const needIds = transactions
+      .filter(t => {
+        const d = toBusinessDate(t.created_at);
+        if (fromDate && d < fromDate) return false;
+        if (toDate && d > toDate) return false;
+        return !itemsByTxn[t.id];
+      })
+      .map(t => t.id);
+    if (needIds.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const CHUNK = 200;
+      const next: Record<string, TransactionItem[]> = {};
+      for (let i = 0; i < needIds.length; i += CHUNK) {
+        const slice = needIds.slice(i, i + CHUNK);
+        const { data } = await supabase
+          .from('transaction_items')
+          .select('id, transaction_id, product_name, quantity, price, cost')
+          .in('transaction_id', slice);
+        if (cancelled) return;
+        for (const r of (data || [])) {
+          const tid = (r as any).transaction_id as string;
+          (next[tid] ||= []).push({
+            id: r.id,
+            product_name: r.product_name,
+            quantity: Number(r.quantity),
+            price: Number(r.price),
+            cost: Number(r.cost),
+          });
+        }
+      }
+      if (!cancelled) setItemsByTxn(prev => ({ ...prev, ...next }));
+    })();
+    return () => { cancelled = true; };
+  }, [searchQuery, transactions, fromDate, toDate, user, itemsByTxn]);
+
+  // Lazy-load items for currently visible transactions
+  useEffect(() => {
+    if (!user) return;
+    const visible = filtered.slice(0, salesVisible);
+    const needIds = visible.filter(t => !itemsByTxn[t.id]).map(t => t.id);
+    if (needIds.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('transaction_items')
+        .select('id, transaction_id, product_name, quantity, price, cost')
+        .in('transaction_id', needIds);
+      if (cancelled || !data) return;
+      const next: Record<string, TransactionItem[]> = {};
+      for (const r of data) {
+        const tid = (r as any).transaction_id as string;
+        (next[tid] ||= []).push({
+          id: r.id,
+          product_name: r.product_name,
+          quantity: Number(r.quantity),
+          price: Number(r.price),
+          cost: Number(r.cost),
+        });
+      }
+      setItemsByTxn(prev => ({ ...prev, ...next }));
+    })();
+    return () => { cancelled = true; };
+  }, [filtered, salesVisible, user, itemsByTxn]);
 
   const totalSales = filtered.reduce((s, t) => s + t.total, 0);
   const totalProfit = filtered.reduce((s, t) => s + t.profit, 0);
