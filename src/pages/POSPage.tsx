@@ -180,7 +180,7 @@ const POSPage = () => {
                 )}
                 <p className="text-sm font-bold leading-tight line-clamp-2 mb-0.5">{p.name}</p>
                 {(p.package_type || p.size_value) && (
-                  <p className="text-xs text-muted-foreground mb-1.5">
+                  <p className="text-sm text-muted-foreground mb-1.5">
                     {[p.package_type, p.size_value].filter(Boolean).join(' · ')}
                   </p>
                 )}
