@@ -50,6 +50,63 @@ export type Database = {
         }
         Relationships: []
       }
+      gcash_settings: {
+        Row: {
+          created_at: string
+          updated_at: string
+          user_id: string
+          wallet_balance: number
+        }
+        Insert: {
+          created_at?: string
+          updated_at?: string
+          user_id: string
+          wallet_balance?: number
+        }
+        Update: {
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+          wallet_balance?: number
+        }
+        Relationships: []
+      }
+      gcash_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_name: string | null
+          fee: number
+          id: string
+          notes: string | null
+          reference_number: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_name?: string | null
+          fee?: number
+          id?: string
+          notes?: string | null
+          reference_number?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_name?: string | null
+          fee?: number
+          id?: string
+          notes?: string | null
+          reference_number?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           content: string
@@ -272,6 +329,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_gcash_settings: { Args: { p_user: string }; Returns: undefined }
+      gcash_wallet_delta: {
+        Args: { p_amount: number; p_type: string }
+        Returns: number
+      }
       process_pos_sale: {
         Args: { p_items: Json; p_paid: number }
         Returns: string
