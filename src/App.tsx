@@ -12,6 +12,7 @@ import POSPage from "./pages/POSPage";
 import InventoryPage from "./pages/InventoryPage";
 import SalesPage from "./pages/SalesPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import GCashPage from "./pages/GCashPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 import NotesWidget from "./components/NotesWidget";
@@ -42,6 +43,7 @@ const ProtectedRoutes = () => {
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/sales" element={<SalesPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />
+        <Route path="/gcash" element={<GCashPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
