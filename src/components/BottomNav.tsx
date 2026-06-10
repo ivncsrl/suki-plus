@@ -1,11 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, ShoppingCart, Package, BarChart3, Receipt, User } from 'lucide-react';
+import { Home, ShoppingCart, Package, BarChart3, Receipt, User, Wallet } from 'lucide-react';
 
 const tabs = [
   { path: '/', label: 'Home', icon: Home },
   { path: '/pos', label: 'POS', icon: ShoppingCart },
   { path: '/inventory', label: 'Inventory', icon: Package },
   { path: '/sales', label: 'Sales', icon: BarChart3 },
+  { path: '/gcash', label: 'GCash', icon: Wallet },
   { path: '/expenses', label: 'Expenses', icon: Receipt },
   { path: '/profile', label: 'Profile', icon: User },
 ];
