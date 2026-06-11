@@ -281,6 +281,16 @@ const GCashPage = () => {
                 })}
               </div>
             </div>
+            <div>
+              <Label className="text-sm">Date</Label>
+              <div className="relative mt-1">
+                <Input
+                  type="date"
+                  value={form.transaction_date}
+                  onChange={e => setForm(f => ({ ...f, transaction_date: e.target.value }))}
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-sm">Amount (₱)</Label>
