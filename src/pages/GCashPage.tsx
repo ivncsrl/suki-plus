@@ -111,6 +111,7 @@ const GCashPage = () => {
       customer_name: form.customer_name.trim() || null,
       reference_number: form.reference_number.trim() || null,
       notes: form.notes.trim() || null,
+      transaction_date: form.transaction_date,
     };
     try {
       if (editingId) {
