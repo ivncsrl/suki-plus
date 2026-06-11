@@ -94,6 +94,7 @@ const GCashPage = () => {
       customer_name: t.customer_name || '',
       reference_number: t.reference_number || '',
       notes: t.notes || '',
+      transaction_date: t.transaction_date || todayStr(),
     });
     setShowForm(true);
   };
