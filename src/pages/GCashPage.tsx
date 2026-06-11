@@ -231,7 +231,7 @@ const GCashPage = () => {
                   <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     <div className="truncate">
                       {t.customer_name && <span>{t.customer_name} · </span>}
-                      {new Date(t.created_at).toLocaleString('en-PH', { dateStyle: 'short', timeStyle: 'short' })}
+                      {t.transaction_date}
                       {t.reference_number && <span> · Ref {t.reference_number}</span>}
                     </div>
                     {t.fee > 0 && <span className="text-emerald-600 font-semibold">Fee {peso(t.fee)}</span>}
