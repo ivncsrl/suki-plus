@@ -21,6 +21,8 @@ const TYPE_META: Record<GcashType, { label: string; icon: any; color: string; si
 
 const TYPES: GcashType[] = ['cash_in', 'cash_out', 'mobile_load', 'bills_payment'];
 
+const todayStr = () => new Date().toISOString().split('T')[0];
+
 const emptyForm = () => ({
   type: 'cash_in' as GcashType,
   amount: '',
@@ -28,6 +30,7 @@ const emptyForm = () => ({
   customer_name: '',
   reference_number: '',
   notes: '',
+  transaction_date: todayStr(),
 });
 
 const GCashPage = () => {
