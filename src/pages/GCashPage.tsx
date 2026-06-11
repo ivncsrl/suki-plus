@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { Plus, Trash2, Pencil, Wallet, ArrowUpRight, ArrowDownLeft, Smartphone, FileText, Pencil as PencilIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
