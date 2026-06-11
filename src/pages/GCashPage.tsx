@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { Plus, Trash2, Pencil, Wallet, ArrowUpRight, ArrowDownLeft, Smartphone, FileText, Pencil as PencilIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,8 @@ const TYPE_META: Record<GcashType, { label: string; icon: any; color: string; si
 
 const TYPES: GcashType[] = ['cash_in', 'cash_out', 'mobile_load', 'bills_payment'];
 
+const todayStr = () => new Date().toISOString().split('T')[0];
+
 const emptyForm = () => ({
   type: 'cash_in' as GcashType,
   amount: '',
@@ -27,6 +30,7 @@ const emptyForm = () => ({
   customer_name: '',
   reference_number: '',
   notes: '',
+  transaction_date: todayStr(),
 });
 
 const GCashPage = () => {
@@ -90,6 +94,7 @@ const GCashPage = () => {
       customer_name: t.customer_name || '',
       reference_number: t.reference_number || '',
       notes: t.notes || '',
+      transaction_date: t.transaction_date || todayStr(),
     });
     setShowForm(true);
   };
@@ -106,6 +111,7 @@ const GCashPage = () => {
       customer_name: form.customer_name.trim() || null,
       reference_number: form.reference_number.trim() || null,
       notes: form.notes.trim() || null,
+      transaction_date: form.transaction_date,
     };
     try {
       if (editingId) {
@@ -225,7 +231,7 @@ const GCashPage = () => {
                   <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     <div className="truncate">
                       {t.customer_name && <span>{t.customer_name} · </span>}
-                      {new Date(t.created_at).toLocaleString('en-PH', { dateStyle: 'short', timeStyle: 'short' })}
+                      {t.transaction_date}
                       {t.reference_number && <span> · Ref {t.reference_number}</span>}
                     </div>
                     {t.fee > 0 && <span className="text-emerald-600 font-semibold">Fee {peso(t.fee)}</span>}
@@ -273,6 +279,16 @@ const GCashPage = () => {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm">Date</Label>
+              <div className="relative mt-1">
+                <Input
+                  type="date"
+                  value={form.transaction_date}
+                  onChange={e => setForm(f => ({ ...f, transaction_date: e.target.value }))}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
