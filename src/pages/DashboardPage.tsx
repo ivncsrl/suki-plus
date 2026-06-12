@@ -54,7 +54,7 @@ const DashboardPage = () => {
         supabase.from('transactions').select('total, profit, created_at').eq('user_id', user.id).gte('created_at', weekStartIso),
       ]);
 
-      const products = productsRes.data || [];
+      const productCount = productsRes.count || 0;
       const txns = weekTxnRes.data || [];
 
       // Build 7-day buckets Mon..Sun starting from weekStartDate
