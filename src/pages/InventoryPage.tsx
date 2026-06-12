@@ -130,9 +130,6 @@ const InventoryPage = () => {
 
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, categoryFilter]);
 
-  const totalValue = products.reduce((s, p) => s + p.buying_price * p.stock, 0);
-  const totalRevenue = products.reduce((s, p) => s + p.selling_price * p.stock, 0);
-  const totalProfit = totalRevenue - totalValue;
 
   const handleImageUpload = async (file: File) => {
     if (!user) return;
@@ -392,20 +389,6 @@ const InventoryPage = () => {
         </Select>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold">Cost Value</p>
-          <p className="text-sm font-extrabold">{peso(totalValue)}</p>
-        </div>
-        <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold">Potential Rev.</p>
-          <p className="text-sm font-extrabold text-primary">{peso(totalRevenue)}</p>
-        </div>
-        <div className="bg-card rounded-lg p-2 border border-border text-center">
-          <p className="text-[10px] text-muted-foreground font-semibold">Potential Profit</p>
-          <p className="text-sm font-extrabold text-success">{peso(totalProfit)}</p>
-        </div>
-      </div>
 
       {filtered.length > 0 && (
         <div className="flex items-center gap-2 mb-2">
