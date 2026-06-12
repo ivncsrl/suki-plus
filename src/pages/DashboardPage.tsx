@@ -206,66 +206,6 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Low Stock Alerts — database-style list */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden shadow-mui-1 mb-4">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/30">
-          <AlertTriangle className="w-4 h-4 text-destructive" />
-          <h2 className="font-bold text-sm">Low Stock Alerts</h2>
-          <span className="text-[10px] bg-destructive/10 text-destructive font-bold px-1.5 py-0.5 rounded-full">{data.lowStockProducts.length}</span>
-        </div>
-
-        {data.lowStockProducts.length === 0 ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">All products are well-stocked. 🎉</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/20 text-muted-foreground text-[11px] uppercase tracking-wide">
-                  <th className="text-left font-semibold px-4 py-2">Product</th>
-                  <th className="text-left font-semibold px-4 py-2 hidden sm:table-cell">Category</th>
-                  <th className="text-right font-semibold px-4 py-2">Stock</th>
-                  <th className="text-right font-semibold px-4 py-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagedLowStock.map((p, i) => (
-                  <tr
-                    key={p.id}
-                    onClick={() => navigate('/inventory')}
-                    className={`cursor-pointer hover:bg-muted/30 transition-colors ${i !== pagedLowStock.length - 1 ? 'border-b border-border' : ''}`}
-                  >
-                    <td className="px-4 py-2.5 font-medium truncate max-w-[180px]">{p.name}</td>
-                    <td className="px-4 py-2.5 text-muted-foreground hidden sm:table-cell">{p.category || '—'}</td>
-                    <td className="px-4 py-2.5 text-right font-bold">{p.stock}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.stock === 0 ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning-foreground border border-warning/30'}`}>
-                        {p.stock === 0 ? 'OUT OF STOCK' : 'LOW'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {data.lowStockProducts.length > PAGE_SIZE && (
-          <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-muted/20 text-xs">
-            <span className="text-muted-foreground">
-              Showing {(lowStockPage - 1) * PAGE_SIZE + 1}–{Math.min(lowStockPage * PAGE_SIZE, data.lowStockProducts.length)} of {data.lowStockProducts.length}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-7 w-7" disabled={lowStockPage === 1} onClick={(e) => { e.stopPropagation(); setLowStockPage(p => Math.max(1, p - 1)); }}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="px-2 font-semibold">{lowStockPage} / {totalPages}</span>
-              <Button variant="outline" size="icon" className="h-7 w-7" disabled={lowStockPage === totalPages} onClick={(e) => { e.stopPropagation(); setLowStockPage(p => Math.min(totalPages, p + 1)); }}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
