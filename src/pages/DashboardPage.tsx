@@ -50,7 +50,7 @@ const DashboardPage = () => {
 
       const [profileRes, productsRes, weekTxnRes] = await Promise.all([
         supabase.from('profiles').select('store_name').eq('user_id', user.id).single(),
-        supabase.from('products').select('id, name, stock, category').eq('user_id', user.id),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('transactions').select('total, profit, created_at').eq('user_id', user.id).gte('created_at', weekStartIso),
       ]);
 
