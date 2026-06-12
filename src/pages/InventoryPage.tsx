@@ -290,52 +290,30 @@ const InventoryPage = () => {
     const entries = historyByProduct[productId];
     if (!entries) return <p className="text-[11px] text-muted-foreground italic">Loading history...</p>;
     const priceChanges = entries.filter(e => e.change_type === 'price');
-    const restocks = entries.filter(e => e.change_type === 'restock');
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-        <div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <p className="font-semibold text-foreground">Price Changes</p>
-          </div>
-          {priceChanges.length === 0 ? (
-            <p className="text-muted-foreground italic pl-5">No changes yet</p>
-          ) : (
-            <ul className="space-y-1 pl-5 list-disc marker:text-muted-foreground">
-              {priceChanges.slice(0, 5).map(e => (
-                <li key={e.id}>
-                  <span className="text-muted-foreground">{formatRelative(e.created_at)}: </span>
-                  {e.old_selling_price !== e.new_selling_price && (
-                    <span>Sell {peso(Number(e.old_selling_price))} → <span className="font-semibold">{peso(Number(e.new_selling_price))}</span></span>
-                  )}
-                  {e.old_selling_price !== e.new_selling_price && e.old_buying_price !== e.new_buying_price && <span>, </span>}
-                  {e.old_buying_price !== e.new_buying_price && (
-                    <span>Buy {peso(Number(e.old_buying_price))} → <span className="font-semibold">{peso(Number(e.new_buying_price))}</span></span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+      <div className="text-[11px]">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+          <p className="font-semibold text-foreground">Price Changes</p>
         </div>
-        <div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <PackagePlus className="w-3.5 h-3.5 text-muted-foreground" />
-            <p className="font-semibold text-foreground">Restocks</p>
-          </div>
-          {restocks.length === 0 ? (
-            <p className="text-muted-foreground italic pl-5">No restocks yet</p>
-          ) : (
-            <ul className="space-y-1 pl-5 list-disc marker:text-muted-foreground">
-              {restocks.slice(0, 5).map(e => (
-                <li key={e.id}>
-                  <span className="text-muted-foreground">{formatRelative(e.created_at)}: </span>
-                  <span className="font-semibold">+{Number(e.new_stock) - Number(e.old_stock)}</span>
-                  <span className="text-muted-foreground"> ({Number(e.old_stock)} → {Number(e.new_stock)})</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {priceChanges.length === 0 ? (
+          <p className="text-muted-foreground italic pl-5">No changes yet</p>
+        ) : (
+          <ul className="space-y-1 pl-5 list-disc marker:text-muted-foreground">
+            {priceChanges.slice(0, 5).map(e => (
+              <li key={e.id}>
+                <span className="text-muted-foreground">{formatRelative(e.created_at)}: </span>
+                {e.old_selling_price !== e.new_selling_price && (
+                  <span>Sell {peso(Number(e.old_selling_price))} → <span className="font-semibold">{peso(Number(e.new_selling_price))}</span></span>
+                )}
+                {e.old_selling_price !== e.new_selling_price && e.old_buying_price !== e.new_buying_price && <span>, </span>}
+                {e.old_buying_price !== e.new_buying_price && (
+                  <span>Buy {peso(Number(e.old_buying_price))} → <span className="font-semibold">{peso(Number(e.new_buying_price))}</span></span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     );
   };
