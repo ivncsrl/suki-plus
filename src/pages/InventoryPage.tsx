@@ -185,7 +185,6 @@ const InventoryPage = () => {
       name: p.name,
       brand: p.brand || '',
       category: p.category || '',
-      stock: String(p.stock),
       buyingPrice: String(p.buying_price),
       sellingPrice: String(p.selling_price),
       imageUrl: p.image_url || '',
