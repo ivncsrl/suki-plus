@@ -36,13 +36,12 @@ const POSPage = () => {
 
   const loadProducts = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase.from('products').select('*').eq('user_id', user.id).gt('stock', 0);
+    const { data } = await supabase.from('products').select('*').eq('user_id', user.id);
     setProducts((data || []).map(p => ({
       id: p.id,
       name: p.name,
       brand: p.brand,
       category: p.category,
-      stock: Number(p.stock),
       buying_price: Number(p.buying_price),
       selling_price: Number(p.selling_price),
       image_url: p.image_url,
