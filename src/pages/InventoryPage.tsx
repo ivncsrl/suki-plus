@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, AlertTriangle, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, PackagePlus, ImagePlus, Loader2, Globe, Copy } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, ImagePlus, Loader2, Globe, Copy } from 'lucide-react';
 import WebImagePicker from '@/components/WebImagePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,8 +14,7 @@ import { compressImage } from '@/lib/imageOptimize';
 
 const PAGE_SIZE = 20;
 
-const LOW_STOCK = 5;
-const emptyForm = { name: '', brand: '', category: '', stock: '', buyingPrice: '', sellingPrice: '', imageUrl: '', packageType: '', sizeValue: '' };
+const emptyForm = { name: '', brand: '', category: '', buyingPrice: '', sellingPrice: '', imageUrl: '', packageType: '', sizeValue: '' };
 
 const PACKAGE_TYPES = ['Can', 'Bottle', 'Pouch', 'Sachet', 'Pack', 'Box', 'Piece', 'Other'];
 
@@ -86,7 +85,7 @@ const InventoryPage = () => {
   const load = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from('products').select('*').eq('user_id', user.id).order('name');
-    setProducts((data || []).map(p => ({ ...p, buying_price: Number(p.buying_price), selling_price: Number(p.selling_price), stock: Number(p.stock) })) as Product[]);
+    setProducts((data || []).map(p => ({ ...p, buying_price: Number(p.buying_price), selling_price: Number(p.selling_price) })) as Product[]);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
@@ -158,7 +157,6 @@ const InventoryPage = () => {
         name: form.name.trim(),
         brand: form.brand.trim() || null,
         category: form.category.trim(),
-        stock: parseFloat(form.stock) || 0,
         buying_price: parseFloat(form.buyingPrice) || 0,
         selling_price: parseFloat(form.sellingPrice) || 0,
         image_url: form.imageUrl || null,
@@ -187,7 +185,6 @@ const InventoryPage = () => {
       name: p.name,
       brand: p.brand || '',
       category: p.category || '',
-      stock: String(p.stock),
       buyingPrice: String(p.buying_price),
       sellingPrice: String(p.selling_price),
       imageUrl: p.image_url || '',
@@ -293,52 +290,30 @@ const InventoryPage = () => {
     const entries = historyByProduct[productId];
     if (!entries) return <p className="text-[11px] text-muted-foreground italic">Loading history...</p>;
     const priceChanges = entries.filter(e => e.change_type === 'price');
-    const restocks = entries.filter(e => e.change_type === 'restock');
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-        <div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <p className="font-semibold text-foreground">Price Changes</p>
-          </div>
-          {priceChanges.length === 0 ? (
-            <p className="text-muted-foreground italic pl-5">No changes yet</p>
-          ) : (
-            <ul className="space-y-1 pl-5 list-disc marker:text-muted-foreground">
-              {priceChanges.slice(0, 5).map(e => (
-                <li key={e.id}>
-                  <span className="text-muted-foreground">{formatRelative(e.created_at)}: </span>
-                  {e.old_selling_price !== e.new_selling_price && (
-                    <span>Sell {peso(Number(e.old_selling_price))} → <span className="font-semibold">{peso(Number(e.new_selling_price))}</span></span>
-                  )}
-                  {e.old_selling_price !== e.new_selling_price && e.old_buying_price !== e.new_buying_price && <span>, </span>}
-                  {e.old_buying_price !== e.new_buying_price && (
-                    <span>Buy {peso(Number(e.old_buying_price))} → <span className="font-semibold">{peso(Number(e.new_buying_price))}</span></span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+      <div className="text-[11px]">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+          <p className="font-semibold text-foreground">Price Changes</p>
         </div>
-        <div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <PackagePlus className="w-3.5 h-3.5 text-muted-foreground" />
-            <p className="font-semibold text-foreground">Restocks</p>
-          </div>
-          {restocks.length === 0 ? (
-            <p className="text-muted-foreground italic pl-5">No restocks yet</p>
-          ) : (
-            <ul className="space-y-1 pl-5 list-disc marker:text-muted-foreground">
-              {restocks.slice(0, 5).map(e => (
-                <li key={e.id}>
-                  <span className="text-muted-foreground">{formatRelative(e.created_at)}: </span>
-                  <span className="font-semibold">+{Number(e.new_stock) - Number(e.old_stock)}</span>
-                  <span className="text-muted-foreground"> ({Number(e.old_stock)} → {Number(e.new_stock)})</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {priceChanges.length === 0 ? (
+          <p className="text-muted-foreground italic pl-5">No changes yet</p>
+        ) : (
+          <ul className="space-y-1 pl-5 list-disc marker:text-muted-foreground">
+            {priceChanges.slice(0, 5).map(e => (
+              <li key={e.id}>
+                <span className="text-muted-foreground">{formatRelative(e.created_at)}: </span>
+                {e.old_selling_price !== e.new_selling_price && (
+                  <span>Sell {peso(Number(e.old_selling_price))} → <span className="font-semibold">{peso(Number(e.new_selling_price))}</span></span>
+                )}
+                {e.old_selling_price !== e.new_selling_price && e.old_buying_price !== e.new_buying_price && <span>, </span>}
+                {e.old_buying_price !== e.new_buying_price && (
+                  <span>Buy {peso(Number(e.old_buying_price))} → <span className="font-semibold">{peso(Number(e.new_buying_price))}</span></span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     );
   };
@@ -405,7 +380,7 @@ const InventoryPage = () => {
         {filtered.slice(0, visibleCount).map(p => {
           const isExpanded = expandedId === p.id;
           return (
-            <div key={p.id} className={`bg-card rounded-xl border ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} shadow-mui-1 hover:shadow-mui-2 transition-shadow overflow-hidden`}>
+            <div key={p.id} className={`bg-card rounded-xl border border-border ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} shadow-mui-1 hover:shadow-mui-2 transition-shadow overflow-hidden`}>
               <button
                 type="button"
                 onClick={() => setExpandedId(isExpanded ? null : p.id)}
@@ -428,10 +403,7 @@ const InventoryPage = () => {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="font-bold text-lg truncate">{p.name}</h3>
-                        {p.stock <= LOW_STOCK && <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />}
-                      </div>
+                      <h3 className="font-bold text-lg truncate">{p.name}</h3>
                       <p className="text-sm truncate mt-1">
                         {p.brand && <span className="font-semibold text-foreground">{p.brand}</span>}
                         {p.brand && p.category && <span className="text-muted-foreground"> · </span>}
@@ -446,8 +418,7 @@ const InventoryPage = () => {
                   </div>
                   <ChevronDown className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
-                <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
-                  <div><div className="text-xs text-muted-foreground">Stock</div><div className="font-bold text-base">{p.stock}</div></div>
+                <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
                   <div><div className="text-xs text-muted-foreground">Buy</div><div className="font-bold text-base">{peso(p.buying_price)}</div></div>
                   <div><div className="text-xs text-muted-foreground">Sell</div><div className="font-bold text-base">{peso(p.selling_price)}</div></div>
                   <div><div className="text-xs text-muted-foreground">Profit</div><div className="font-bold text-base text-success">{peso(p.selling_price - p.buying_price)}</div></div>
@@ -549,8 +520,7 @@ const InventoryPage = () => {
                 </Select>
                 <Input placeholder="Size (e.g. 330ml, 1L, 50g)" value={form.sizeValue} onChange={e => setForm({ ...form, sizeValue: e.target.value })} className="h-11" />
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <Input type="number" inputMode="decimal" placeholder="Stock" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
+              <div className="grid grid-cols-2 gap-2">
                 <Input type="number" inputMode="decimal" placeholder="Buy price" value={form.buyingPrice} onChange={e => setForm({ ...form, buyingPrice: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Sell price" value={form.sellingPrice} onChange={e => setForm({ ...form, sellingPrice: e.target.value })} className="h-11" />
               </div>

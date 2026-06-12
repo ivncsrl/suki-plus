@@ -12,7 +12,6 @@ interface Product {
   name: string;
   brand: string | null;
   category: string | null;
-  stock: number;
   buying_price: number;
   selling_price: number;
   image_url: string | null;
@@ -37,13 +36,12 @@ const POSPage = () => {
 
   const loadProducts = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase.from('products').select('*').eq('user_id', user.id).gt('stock', 0);
+    const { data } = await supabase.from('products').select('*').eq('user_id', user.id);
     setProducts((data || []).map(p => ({
       id: p.id,
       name: p.name,
       brand: p.brand,
       category: p.category,
-      stock: Number(p.stock),
       buying_price: Number(p.buying_price),
       selling_price: Number(p.selling_price),
       image_url: p.image_url,
@@ -70,7 +68,6 @@ const POSPage = () => {
     setCart(prev => {
       const existing = prev.find(c => c.product.id === product.id);
       if (existing) {
-        if (existing.quantity >= product.stock) return prev;
         return prev.map(c => c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c);
       }
       return [...prev, { product, quantity: 1 }];
@@ -82,7 +79,7 @@ const POSPage = () => {
     setCart(prev => prev.map(c => {
       if (c.product.id !== id) return c;
       const newQty = Math.round((c.quantity + delta) * 100) / 100;
-      if (newQty <= 0 || newQty > c.product.stock) return c;
+      if (newQty <= 0) return c;
       return { ...c, quantity: newQty };
     }));
   };
@@ -93,7 +90,6 @@ const POSPage = () => {
     if (!isNaN(num) && num > 0) {
       setCart(prev => prev.map(c => {
         if (c.product.id !== id) return c;
-        if (num > c.product.stock) return c;
         return { ...c, quantity: num };
       }));
     }
@@ -186,7 +182,6 @@ const POSPage = () => {
                 )}
                 <div className="mt-auto flex items-end justify-between gap-2">
                   <span className="text-base font-extrabold text-primary">{peso(p.selling_price)}</span>
-                  <span className="text-[10px] text-muted-foreground font-semibold">Stock: {p.stock}</span>
                 </div>
               </button>
             ))}
