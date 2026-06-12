@@ -157,7 +157,6 @@ const InventoryPage = () => {
         name: form.name.trim(),
         brand: form.brand.trim() || null,
         category: form.category.trim(),
-        stock: parseFloat(form.stock) || 0,
         buying_price: parseFloat(form.buyingPrice) || 0,
         selling_price: parseFloat(form.sellingPrice) || 0,
         image_url: form.imageUrl || null,
