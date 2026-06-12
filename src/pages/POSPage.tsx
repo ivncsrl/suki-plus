@@ -68,7 +68,6 @@ const POSPage = () => {
     setCart(prev => {
       const existing = prev.find(c => c.product.id === product.id);
       if (existing) {
-        if (existing.quantity >= product.stock) return prev;
         return prev.map(c => c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c);
       }
       return [...prev, { product, quantity: 1 }];
@@ -80,7 +79,7 @@ const POSPage = () => {
     setCart(prev => prev.map(c => {
       if (c.product.id !== id) return c;
       const newQty = Math.round((c.quantity + delta) * 100) / 100;
-      if (newQty <= 0 || newQty > c.product.stock) return c;
+      if (newQty <= 0) return c;
       return { ...c, quantity: newQty };
     }));
   };
@@ -91,7 +90,6 @@ const POSPage = () => {
     if (!isNaN(num) && num > 0) {
       setCart(prev => prev.map(c => {
         if (c.product.id !== id) return c;
-        if (num > c.product.stock) return c;
         return { ...c, quantity: num };
       }));
     }
