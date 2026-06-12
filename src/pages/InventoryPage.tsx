@@ -520,8 +520,7 @@ const InventoryPage = () => {
                 </Select>
                 <Input placeholder="Size (e.g. 330ml, 1L, 50g)" value={form.sizeValue} onChange={e => setForm({ ...form, sizeValue: e.target.value })} className="h-11" />
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <Input type="number" inputMode="decimal" placeholder="Stock" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
+              <div className="grid grid-cols-2 gap-2">
                 <Input type="number" inputMode="decimal" placeholder="Buy price" value={form.buyingPrice} onChange={e => setForm({ ...form, buyingPrice: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Sell price" value={form.sellingPrice} onChange={e => setForm({ ...form, sellingPrice: e.target.value })} className="h-11" />
               </div>
