@@ -97,8 +97,7 @@ const DashboardPage = () => {
       setData({
         storeName: profileRes.data?.store_name || 'My Store',
         todaySales, todayProfit, todayTxnCount,
-        totalProducts: products.length,
-        lowStockProducts: products.filter(p => p.stock <= 5).sort((a, b) => a.stock - b.stock),
+        totalProducts: productCount,
         weekSales, weekProfit, weekTxnCount: txns.length, weekData,
       });
       setLoading(false);
