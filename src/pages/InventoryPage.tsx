@@ -380,7 +380,7 @@ const InventoryPage = () => {
         {filtered.slice(0, visibleCount).map(p => {
           const isExpanded = expandedId === p.id;
           return (
-            <div key={p.id} className={`bg-card rounded-xl border ${p.stock <= LOW_STOCK ? 'border-destructive/50' : 'border-border'} ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} shadow-mui-1 hover:shadow-mui-2 transition-shadow overflow-hidden`}>
+            <div key={p.id} className={`bg-card rounded-xl border border-border ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} shadow-mui-1 hover:shadow-mui-2 transition-shadow overflow-hidden`}>
               <button
                 type="button"
                 onClick={() => setExpandedId(isExpanded ? null : p.id)}
