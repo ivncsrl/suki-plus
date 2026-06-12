@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso, getBusinessDayStart, getBusinessDate } from '@/lib/format';
-import { ShoppingCart, Package, TrendingUp, AlertTriangle, LogOut, CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Package, TrendingUp, LogOut, CalendarRange } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -20,7 +20,6 @@ interface DashboardData {
   todayProfit: number;
   todayTxnCount: number;
   totalProducts: number;
-  lowStockProducts: { id: string; name: string; stock: number; category: string | null }[];
   weekSales: number;
   weekProfit: number;
   weekTxnCount: number;
@@ -32,17 +31,10 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardData>({
     storeName: 'My Store', todaySales: 0, todayProfit: 0, todayTxnCount: 0, totalProducts: 0,
-    lowStockProducts: [], weekSales: 0, weekProfit: 0, weekTxnCount: 0, weekData: [],
+    weekSales: 0, weekProfit: 0, weekTxnCount: 0, weekData: [],
   });
   const [loading, setLoading] = useState(true);
-  const [lowStockPage, setLowStockPage] = useState(1);
-  const PAGE_SIZE = 10;
-  const totalPages = Math.max(1, Math.ceil(data.lowStockProducts.length / PAGE_SIZE));
-  const pagedLowStock = useMemo(
-    () => data.lowStockProducts.slice((lowStockPage - 1) * PAGE_SIZE, lowStockPage * PAGE_SIZE),
-    [data.lowStockProducts, lowStockPage]
-  );
-  useEffect(() => { if (lowStockPage > totalPages) setLowStockPage(1); }, [totalPages, lowStockPage]);
+
 
   useEffect(() => {
     if (!user) return;
