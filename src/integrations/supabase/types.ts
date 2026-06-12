@@ -197,7 +197,7 @@ export type Database = {
           price_updated_at: string | null
           selling_price: number
           size_value: string | null
-          stock: number
+          stock: number | null
           stock_updated_at: string | null
           updated_at: string
           user_id: string
@@ -214,7 +214,7 @@ export type Database = {
           price_updated_at?: string | null
           selling_price?: number
           size_value?: string | null
-          stock?: number
+          stock?: number | null
           stock_updated_at?: string | null
           updated_at?: string
           user_id: string
@@ -231,7 +231,7 @@ export type Database = {
           price_updated_at?: string | null
           selling_price?: number
           size_value?: string | null
-          stock?: number
+          stock?: number | null
           stock_updated_at?: string | null
           updated_at?: string
           user_id?: string
