@@ -85,7 +85,7 @@ const InventoryPage = () => {
   const load = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from('products').select('*').eq('user_id', user.id).order('name');
-    setProducts((data || []).map(p => ({ ...p, buying_price: Number(p.buying_price), selling_price: Number(p.selling_price), stock: Number(p.stock) })) as Product[]);
+    setProducts((data || []).map(p => ({ ...p, buying_price: Number(p.buying_price), selling_price: Number(p.selling_price) })) as Product[]);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
