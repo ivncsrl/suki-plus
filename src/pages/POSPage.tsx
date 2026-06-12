@@ -12,7 +12,6 @@ interface Product {
   name: string;
   brand: string | null;
   category: string | null;
-  stock: number;
   buying_price: number;
   selling_price: number;
   image_url: string | null;
