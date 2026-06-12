@@ -182,7 +182,6 @@ const POSPage = () => {
                 )}
                 <div className="mt-auto flex items-end justify-between gap-2">
                   <span className="text-base font-extrabold text-primary">{peso(p.selling_price)}</span>
-                  <span className="text-[10px] text-muted-foreground font-semibold">Stock: {p.stock}</span>
                 </div>
               </button>
             ))}
