@@ -425,7 +425,7 @@ const InventoryPage = () => {
                 {trackInventory && (
                   <div className={`mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-bold ${
                     (p.stock ?? 0) === 0 ? 'bg-destructive/10 text-destructive' :
-                    (p.stock ?? 0) <= 5 ? 'bg-warning/10 text-warning' : 'bg-secondary text-foreground'
+                    (p.stock ?? 0) <= 5 ? 'bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))]' : 'bg-secondary text-foreground'
                   }`}>
                     {(p.stock ?? 0) <= 5 && <AlertTriangle className="w-3 h-3" />}
                     Stock: {p.stock ?? 0}
