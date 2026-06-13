@@ -29,11 +29,14 @@ interface DashboardData {
 
 const DashboardPage = () => {
   const { user, signOut } = useAuth();
+  const { trackInventory } = useInventoryTracking();
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardData>({
     storeName: 'My Store', todaySales: 0, todayProfit: 0, todayTxnCount: 0, totalProducts: 0,
     weekSales: 0, weekProfit: 0, weekTxnCount: 0, weekData: [],
   });
+  const [lowStock, setLowStock] = useState<Array<{ id: string; name: string; stock: number }>>([]);
+  const [inventoryStats, setInventoryStats] = useState({ costValue: 0, potentialRevenue: 0, potentialProfit: 0 });
   const [loading, setLoading] = useState(true);
 
 
