@@ -539,6 +539,7 @@ const InventoryPage = () => {
               </div>
               {trackInventory && (
                 <Input type="number" inputMode="numeric" placeholder="Stock quantity" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
+              )}
               <Button onClick={handleSubmit} className="w-full h-11 font-bold">{editId ? 'Update Product' : 'Add Product'}</Button>
             </div>
           </div>
