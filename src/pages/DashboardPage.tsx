@@ -227,6 +227,46 @@ const DashboardPage = () => {
         </div>
       </div>
 
+      {trackInventory && (
+        <>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="bg-card rounded-xl border border-border p-3 shadow-mui-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Cost Value</p>
+              <p className="text-base font-extrabold leading-tight">{peso(inventoryStats.costValue)}</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border p-3 shadow-mui-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Potential Rev.</p>
+              <p className="text-base font-extrabold text-primary leading-tight">{peso(inventoryStats.potentialRevenue)}</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border p-3 shadow-mui-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Potential Profit</p>
+              <p className="text-base font-extrabold text-success leading-tight">{peso(inventoryStats.potentialProfit)}</p>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-4 mb-4 shadow-mui-1">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              <h2 className="font-bold text-sm">Low Stock Alerts</h2>
+            </div>
+            {lowStock.length === 0 ? (
+              <p className="text-xs text-muted-foreground">All products are well-stocked.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {lowStock.map(p => (
+                  <li key={p.id} className="flex items-center justify-between py-2">
+                    <span className="text-sm font-semibold truncate">{p.name}</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${p.stock === 0 ? 'bg-destructive/10 text-destructive' : 'bg-[hsl(var(--warning)/0.15)] text-[hsl(var(--warning))]'}`}>
+                      {p.stock} left
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
+
     </div>
   );
 };
