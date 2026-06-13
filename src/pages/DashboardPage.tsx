@@ -104,10 +104,36 @@ const DashboardPage = () => {
         totalProducts: productCount,
         weekSales, weekProfit, weekTxnCount: txns.length, weekData,
       });
+
+      if (trackInventory) {
+        const { data: prods } = await supabase
+          .from('products')
+          .select('id, name, stock, buying_price, selling_price')
+          .eq('user_id', user.id);
+        const all = prods || [];
+        let cost = 0, rev = 0;
+        for (const p of all) {
+          const s = Number((p as any).stock ?? 0);
+          cost += s * Number((p as any).buying_price);
+          rev += s * Number((p as any).selling_price);
+        }
+        setInventoryStats({ costValue: cost, potentialRevenue: rev, potentialProfit: rev - cost });
+        setLowStock(
+          all
+            .filter((p: any) => Number(p.stock ?? 0) <= 5)
+            .sort((a: any, b: any) => Number(a.stock ?? 0) - Number(b.stock ?? 0))
+            .slice(0, 10)
+            .map((p: any) => ({ id: p.id, name: p.name, stock: Number(p.stock ?? 0) }))
+        );
+      } else {
+        setInventoryStats({ costValue: 0, potentialRevenue: 0, potentialProfit: 0 });
+        setLowStock([]);
+      }
+
       setLoading(false);
     };
     load();
-  }, [user]);
+  }, [user, trackInventory]);
 
   if (loading) return <div className="flex items-center justify-center min-h-screen text-muted-foreground">Loading...</div>;
 
