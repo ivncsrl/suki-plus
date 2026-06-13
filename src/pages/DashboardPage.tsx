@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso, getBusinessDayStart, getBusinessDate } from '@/lib/format';
-import { ShoppingCart, Package, TrendingUp, LogOut, CalendarRange } from 'lucide-react';
+import { ShoppingCart, Package, TrendingUp, LogOut, CalendarRange, AlertTriangle } from 'lucide-react';
+import { useInventoryTracking } from '@/hooks/useInventoryTracking';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -28,11 +29,14 @@ interface DashboardData {
 
 const DashboardPage = () => {
   const { user, signOut } = useAuth();
+  const { trackInventory } = useInventoryTracking();
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardData>({
     storeName: 'My Store', todaySales: 0, todayProfit: 0, todayTxnCount: 0, totalProducts: 0,
     weekSales: 0, weekProfit: 0, weekTxnCount: 0, weekData: [],
   });
+  const [lowStock, setLowStock] = useState<Array<{ id: string; name: string; stock: number }>>([]);
+  const [inventoryStats, setInventoryStats] = useState({ costValue: 0, potentialRevenue: 0, potentialProfit: 0 });
   const [loading, setLoading] = useState(true);
 
 
@@ -100,10 +104,36 @@ const DashboardPage = () => {
         totalProducts: productCount,
         weekSales, weekProfit, weekTxnCount: txns.length, weekData,
       });
+
+      if (trackInventory) {
+        const { data: prods } = await supabase
+          .from('products')
+          .select('id, name, stock, buying_price, selling_price')
+          .eq('user_id', user.id);
+        const all = prods || [];
+        let cost = 0, rev = 0;
+        for (const p of all) {
+          const s = Number((p as any).stock ?? 0);
+          cost += s * Number((p as any).buying_price);
+          rev += s * Number((p as any).selling_price);
+        }
+        setInventoryStats({ costValue: cost, potentialRevenue: rev, potentialProfit: rev - cost });
+        setLowStock(
+          all
+            .filter((p: any) => Number(p.stock ?? 0) <= 5)
+            .sort((a: any, b: any) => Number(a.stock ?? 0) - Number(b.stock ?? 0))
+            .slice(0, 10)
+            .map((p: any) => ({ id: p.id, name: p.name, stock: Number(p.stock ?? 0) }))
+        );
+      } else {
+        setInventoryStats({ costValue: 0, potentialRevenue: 0, potentialProfit: 0 });
+        setLowStock([]);
+      }
+
       setLoading(false);
     };
     load();
-  }, [user]);
+  }, [user, trackInventory]);
 
   if (loading) return <div className="flex items-center justify-center min-h-screen text-muted-foreground">Loading...</div>;
 
@@ -196,6 +226,46 @@ const DashboardPage = () => {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {trackInventory && (
+        <>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="bg-card rounded-xl border border-border p-3 shadow-mui-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Cost Value</p>
+              <p className="text-base font-extrabold leading-tight">{peso(inventoryStats.costValue)}</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border p-3 shadow-mui-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Potential Rev.</p>
+              <p className="text-base font-extrabold text-primary leading-tight">{peso(inventoryStats.potentialRevenue)}</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border p-3 shadow-mui-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Potential Profit</p>
+              <p className="text-base font-extrabold text-success leading-tight">{peso(inventoryStats.potentialProfit)}</p>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-4 mb-4 shadow-mui-1">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              <h2 className="font-bold text-sm">Low Stock Alerts</h2>
+            </div>
+            {lowStock.length === 0 ? (
+              <p className="text-xs text-muted-foreground">All products are well-stocked.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {lowStock.map(p => (
+                  <li key={p.id} className="flex items-center justify-between py-2">
+                    <span className="text-sm font-semibold truncate">{p.name}</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${p.stock === 0 ? 'bg-destructive/10 text-destructive' : 'bg-[hsl(var(--warning)/0.15)] text-[hsl(var(--warning))]'}`}>
+                      {p.stock} left
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
 
     </div>
   );

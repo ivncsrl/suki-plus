@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso } from '@/lib/format';
 import { toast } from 'sonner';
+import { useInventoryTracking } from '@/hooks/useInventoryTracking';
 
 interface Product {
   id: string;
@@ -17,6 +18,7 @@ interface Product {
   image_url: string | null;
   package_type: string | null;
   size_value: string | null;
+  stock: number;
 }
 
 interface CartItem {
@@ -26,6 +28,7 @@ interface CartItem {
 
 const POSPage = () => {
   const { user } = useAuth();
+  const { trackInventory } = useInventoryTracking();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState('');
@@ -47,6 +50,7 @@ const POSPage = () => {
       image_url: p.image_url,
       package_type: p.package_type,
       size_value: p.size_value,
+      stock: Number(p.stock ?? 0),
     })));
   }, [user]);
 
@@ -68,11 +72,19 @@ const POSPage = () => {
     setCart(prev => {
       const existing = prev.find(c => c.product.id === product.id);
       if (existing) {
+        if (trackInventory && existing.quantity + 1 > product.stock) {
+          toast.error(`Only ${product.stock} in stock`);
+          return prev;
+        }
         return prev.map(c => c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c);
+      }
+      if (trackInventory && product.stock <= 0) {
+        toast.error('Out of stock');
+        return prev;
       }
       return [...prev, { product, quantity: 1 }];
     });
-  }, []);
+  }, [trackInventory]);
 
   const updateQty = (id: string, delta: number) => {
     setQtyInputs(prev => { const next = { ...prev }; delete next[id]; return next; });
@@ -182,6 +194,11 @@ const POSPage = () => {
                 )}
                 <div className="mt-auto flex items-end justify-between gap-2">
                   <span className="text-base font-extrabold text-primary">{peso(p.selling_price)}</span>
+                  {trackInventory && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${p.stock <= 0 ? 'bg-destructive/10 text-destructive' : p.stock <= 5 ? 'bg-[hsl(var(--warning)/0.15)] text-[hsl(var(--warning))]' : 'bg-secondary text-muted-foreground'}`}>
+                      {p.stock} left
+                    </span>
+                  )}
                 </div>
               </button>
             ))}

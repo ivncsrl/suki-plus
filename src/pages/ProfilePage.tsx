@@ -4,9 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Lock, Mail, ImageIcon, Trash2, Copy, Loader2, X, Filter } from 'lucide-react';
+import { LogOut, Lock, Mail, ImageIcon, Trash2, Copy, Loader2, X, Filter, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Switch } from '@/components/ui/switch';
+import { useInventoryTracking } from '@/hooks/useInventoryTracking';
 
 interface MediaItem {
   name: string;
@@ -24,6 +26,7 @@ const formatBytes = (n: number) => {
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
+  const { trackInventory, setTrackInventory } = useInventoryTracking();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -129,11 +132,28 @@ const ProfilePage = () => {
         <p className="font-semibold text-sm ml-7">{user?.email}</p>
       </div>
 
-      <Button
-        variant="outline"
-        onClick={() => setMediaOpen(true)}
-        className="w-full h-11 font-bold mb-4 justify-start"
-      >
+      <div className="bg-card rounded-xl border border-border p-4 mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1">
+            <Package className="w-4 h-4 text-muted-foreground mt-0.5" />
+            <div>
+              <h2 className="font-bold text-sm">Track Inventory</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Track stock levels, show cost value, potential revenue/profit, and low-stock alerts.
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={trackInventory}
+            onCheckedChange={async (v) => {
+              await setTrackInventory(v);
+              toast.success(v ? 'Inventory tracking on' : 'Inventory tracking off');
+            }}
+          />
+        </div>
+      </div>
+
+      <Button variant="outline" onClick={() => setMediaOpen(true)} className="w-full h-11 font-bold mb-4 justify-start">
         <ImageIcon className="w-4 h-4 mr-2" /> Media Library
       </Button>
 

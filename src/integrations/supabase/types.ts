@@ -244,6 +244,7 @@ export type Database = {
           id: string
           owner_name: string | null
           store_name: string
+          track_inventory: boolean
           updated_at: string
           user_id: string
         }
@@ -252,6 +253,7 @@ export type Database = {
           id?: string
           owner_name?: string | null
           store_name?: string
+          track_inventory?: boolean
           updated_at?: string
           user_id: string
         }
@@ -260,6 +262,7 @@ export type Database = {
           id?: string
           owner_name?: string | null
           store_name?: string
+          track_inventory?: boolean
           updated_at?: string
           user_id?: string
         }

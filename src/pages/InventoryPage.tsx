@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, ImagePlus, Loader2, Globe, Copy } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, ImagePlus, Loader2, Globe, Copy, AlertTriangle } from 'lucide-react';
+import { useInventoryTracking } from '@/hooks/useInventoryTracking';
 import WebImagePicker from '@/components/WebImagePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import { compressImage } from '@/lib/imageOptimize';
 
 const PAGE_SIZE = 20;
 
-const emptyForm = { name: '', brand: '', category: '', buyingPrice: '', sellingPrice: '', imageUrl: '', packageType: '', sizeValue: '' };
+const emptyForm = { name: '', brand: '', category: '', buyingPrice: '', sellingPrice: '', imageUrl: '', packageType: '', sizeValue: '', stock: '' };
 
 const PACKAGE_TYPES = ['Can', 'Bottle', 'Pouch', 'Sachet', 'Pack', 'Box', 'Piece', 'Other'];
 
@@ -63,6 +64,7 @@ const formatRelative = (dateStr: string | null) => {
 
 const InventoryPage = () => {
   const { user } = useAuth();
+  const { trackInventory } = useInventoryTracking();
   const [products, setProducts] = useState<Product[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -153,7 +155,7 @@ const InventoryPage = () => {
   const handleSubmit = async () => {
     if (!user || !form.name.trim()) return;
     try {
-      const payload = {
+      const payload: any = {
         name: form.name.trim(),
         brand: form.brand.trim() || null,
         category: form.category.trim(),
@@ -163,6 +165,7 @@ const InventoryPage = () => {
         package_type: form.packageType.trim() || null,
         size_value: form.sizeValue.trim() || null,
       };
+      if (trackInventory) payload.stock = parseInt(form.stock) || 0;
       if (editId) {
         const { error } = await supabase.from('products').update(payload).eq('id', editId);
         if (error) throw error;
@@ -190,6 +193,7 @@ const InventoryPage = () => {
       imageUrl: p.image_url || '',
       packageType: p.package_type || '',
       sizeValue: p.size_value || '',
+      stock: String(p.stock ?? 0),
     });
     setEditId(p.id); setShowForm(true);
   };
@@ -418,6 +422,15 @@ const InventoryPage = () => {
                   </div>
                   <ChevronDown className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
+                {trackInventory && (
+                  <div className={`mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-bold ${
+                    (p.stock ?? 0) === 0 ? 'bg-destructive/10 text-destructive' :
+                    (p.stock ?? 0) <= 5 ? 'bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))]' : 'bg-secondary text-foreground'
+                  }`}>
+                    {(p.stock ?? 0) <= 5 && <AlertTriangle className="w-3 h-3" />}
+                    Stock: {p.stock ?? 0}
+                  </div>
+                )}
                 <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
                   <div><div className="text-xs text-muted-foreground">Buy</div><div className="font-bold text-base">{peso(p.buying_price)}</div></div>
                   <div><div className="text-xs text-muted-foreground">Sell</div><div className="font-bold text-base">{peso(p.selling_price)}</div></div>
@@ -524,6 +537,9 @@ const InventoryPage = () => {
                 <Input type="number" inputMode="decimal" placeholder="Buy price" value={form.buyingPrice} onChange={e => setForm({ ...form, buyingPrice: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Sell price" value={form.sellingPrice} onChange={e => setForm({ ...form, sellingPrice: e.target.value })} className="h-11" />
               </div>
+              {trackInventory && (
+                <Input type="number" inputMode="numeric" placeholder="Stock quantity" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
+              )}
               <Button onClick={handleSubmit} className="w-full h-11 font-bold">{editId ? 'Update Product' : 'Add Product'}</Button>
             </div>
           </div>
