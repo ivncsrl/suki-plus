@@ -422,6 +422,15 @@ const InventoryPage = () => {
                   </div>
                   <ChevronDown className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
+                {trackInventory && (
+                  <div className={`mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-bold ${
+                    (p.stock ?? 0) === 0 ? 'bg-destructive/10 text-destructive' :
+                    (p.stock ?? 0) <= 5 ? 'bg-warning/10 text-warning' : 'bg-secondary text-foreground'
+                  }`}>
+                    {(p.stock ?? 0) <= 5 && <AlertTriangle className="w-3 h-3" />}
+                    Stock: {p.stock ?? 0}
+                  </div>
+                )}
                 <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
                   <div><div className="text-xs text-muted-foreground">Buy</div><div className="font-bold text-base">{peso(p.buying_price)}</div></div>
                   <div><div className="text-xs text-muted-foreground">Sell</div><div className="font-bold text-base">{peso(p.selling_price)}</div></div>
@@ -528,6 +537,8 @@ const InventoryPage = () => {
                 <Input type="number" inputMode="decimal" placeholder="Buy price" value={form.buyingPrice} onChange={e => setForm({ ...form, buyingPrice: e.target.value })} className="h-11" />
                 <Input type="number" inputMode="decimal" placeholder="Sell price" value={form.sellingPrice} onChange={e => setForm({ ...form, sellingPrice: e.target.value })} className="h-11" />
               </div>
+              {trackInventory && (
+                <Input type="number" inputMode="numeric" placeholder="Stock quantity" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
               <Button onClick={handleSubmit} className="w-full h-11 font-bold">{editId ? 'Update Product' : 'Add Product'}</Button>
             </div>
           </div>
