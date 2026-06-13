@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { InventoryTrackingProvider } from "@/hooks/useInventoryTracking";
 import BottomNav from "@/components/BottomNav";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -36,7 +37,7 @@ const ProtectedRoutes = () => {
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
-    <>
+    <InventoryTrackingProvider>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/pos" element={<POSPage />} />
@@ -49,7 +50,7 @@ const ProtectedRoutes = () => {
       </Routes>
       <BottomNav />
       <NotesWidget />
-    </>
+    </InventoryTrackingProvider>
   );
 };
 
