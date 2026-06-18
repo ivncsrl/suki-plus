@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Search, Plus, Minus, Trash2, CheckCircle, X, Package, Layers } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CheckCircle, X, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,17 +7,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { peso } from '@/lib/format';
 import { toast } from 'sonner';
 import { useInventoryTracking } from '@/hooks/useInventoryTracking';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-
-interface Variant {
-  id: string;
-  product_id: string;
-  name: string;
-  buying_price: number;
-  selling_price: number;
-  stock: number | null;
-  image_url: string | null;
-}
 
 interface Product {
   id: string;
@@ -30,16 +19,10 @@ interface Product {
   package_type: string | null;
   size_value: string | null;
   stock: number;
-  variants: Variant[];
 }
 
 interface CartItem {
-  key: string; // product.id or product.id|variant.id
   product: Product;
-  variant: Variant | null;
-  unitPrice: number;
-  unitStock: number; // available stock (variant or product)
-  displayName: string;
   quantity: number;
 }
 
@@ -53,26 +36,11 @@ const POSPage = () => {
   const [receipt, setReceipt] = useState<{ items: CartItem[]; total: number; paid: number; change: number } | null>(null);
   const [processing, setProcessing] = useState(false);
   const [qtyInputs, setQtyInputs] = useState<Record<string, string>>({});
-  const [variantPickerProduct, setVariantPickerProduct] = useState<Product | null>(null);
 
   const loadProducts = useCallback(async () => {
     if (!user) return;
-    const { data: prods } = await supabase.from('products').select('*').eq('user_id', user.id);
-    const { data: vars } = await (supabase as any).from('product_variants').select('*').eq('user_id', user.id) as { data: any[] | null };
-    const varsByProduct: Record<string, Variant[]> = {};
-    (vars || []).forEach(v => {
-      const item: Variant = {
-        id: v.id,
-        product_id: v.product_id,
-        name: v.name,
-        buying_price: Number(v.buying_price),
-        selling_price: Number(v.selling_price),
-        stock: v.stock === null ? null : Number(v.stock),
-        image_url: v.image_url,
-      };
-      (varsByProduct[v.product_id] ||= []).push(item);
-    });
-    setProducts((prods || []).map(p => ({
+    const { data } = await supabase.from('products').select('*').eq('user_id', user.id);
+    setProducts((data || []).map(p => ({
       id: p.id,
       name: p.name,
       brand: p.brand,
@@ -83,7 +51,6 @@ const POSPage = () => {
       package_type: p.package_type,
       size_value: p.size_value,
       stock: Number(p.stock ?? 0),
-      variants: (varsByProduct[p.id] || []).sort((a, b) => a.name.localeCompare(b.name)),
     })));
   }, [user]);
 
@@ -95,75 +62,65 @@ const POSPage = () => {
     return products.filter(p =>
       p.name.toLowerCase().includes(q) ||
       (p.brand?.toLowerCase().includes(q) ?? false) ||
-      (p.category?.toLowerCase().includes(q) ?? false) ||
-      p.variants.some(v => v.name.toLowerCase().includes(q))
+      (p.category?.toLowerCase().includes(q) ?? false)
     );
   }, [products, search]);
 
-  const total = useMemo(() => cart.reduce((s, c) => s + c.unitPrice * c.quantity, 0), [cart]);
+  const total = useMemo(() => cart.reduce((s, c) => s + c.product.selling_price * c.quantity, 0), [cart]);
 
-  const addItem = useCallback((product: Product, variant: Variant | null) => {
-    const key = variant ? `${product.id}|${variant.id}` : product.id;
-    const unitPrice = variant ? variant.selling_price : product.selling_price;
-    const unitStock = variant ? Number(variant.stock ?? 0) : product.stock;
-    const displayName = variant ? `${product.name} - ${variant.name}` : product.name;
+  const addToCart = useCallback((product: Product) => {
     setCart(prev => {
-      const existing = prev.find(c => c.key === key);
+      const existing = prev.find(c => c.product.id === product.id);
       if (existing) {
-        if (trackInventory && existing.quantity + 1 > unitStock) {
-          toast.error(`Only ${unitStock} in stock`);
+        if (trackInventory && existing.quantity + 1 > product.stock) {
+          toast.error(`Only ${product.stock} in stock`);
           return prev;
         }
-        return prev.map(c => c.key === key ? { ...c, quantity: c.quantity + 1 } : c);
+        return prev.map(c => c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c);
       }
-      if (trackInventory && unitStock <= 0) {
+      if (trackInventory && product.stock <= 0) {
         toast.error('Out of stock');
         return prev;
       }
-      return [...prev, { key, product, variant, unitPrice, unitStock, displayName, quantity: 1 }];
+      return [...prev, { product, quantity: 1 }];
     });
   }, [trackInventory]);
 
-  const handleProductClick = (product: Product) => {
-    if (product.variants.length > 0) {
-      setVariantPickerProduct(product);
-    } else {
-      addItem(product, null);
-    }
-  };
-
-  const updateQty = (key: string, delta: number) => {
-    setQtyInputs(prev => { const next = { ...prev }; delete next[key]; return next; });
+  const updateQty = (id: string, delta: number) => {
+    setQtyInputs(prev => { const next = { ...prev }; delete next[id]; return next; });
     setCart(prev => prev.map(c => {
-      if (c.key !== key) return c;
+      if (c.product.id !== id) return c;
       const newQty = Math.round((c.quantity + delta) * 100) / 100;
       if (newQty <= 0) return c;
       return { ...c, quantity: newQty };
     }));
   };
 
-  const setQty = (key: string, value: string) => {
-    setQtyInputs(prev => ({ ...prev, [key]: value }));
+  const setQty = (id: string, value: string) => {
+    setQtyInputs(prev => ({ ...prev, [id]: value }));
     const num = parseFloat(value);
     if (!isNaN(num) && num > 0) {
-      setCart(prev => prev.map(c => c.key === key ? { ...c, quantity: num } : c));
+      setCart(prev => prev.map(c => {
+        if (c.product.id !== id) return c;
+        return { ...c, quantity: num };
+      }));
     }
   };
 
-  const getQtyDisplay = (key: string, quantity: number) =>
-    qtyInputs[key] !== undefined ? qtyInputs[key] : String(quantity);
+  const getQtyDisplay = (id: string, quantity: number) =>
+    qtyInputs[id] !== undefined ? qtyInputs[id] : String(quantity);
 
-  const handleQtyBlur = (key: string) => {
-    const val = parseFloat(qtyInputs[key] || '');
-    setQtyInputs(prev => { const next = { ...prev }; delete next[key]; return next; });
+  const handleQtyBlur = (id: string) => {
+    const val = parseFloat(qtyInputs[id] || '');
+    setQtyInputs(prev => { const next = { ...prev }; delete next[id]; return next; });
     if (isNaN(val) || val <= 0) {
-      setCart(prev => prev.map(c => c.key === key ? { ...c, quantity: 1 } : c));
+      setCart(prev => prev.map(c => c.product.id === id ? { ...c, quantity: 1 } : c));
     }
   };
 
-  const removeFromCart = (key: string) => {
-    setQtyInputs(prev => { const next = { ...prev }; delete next[key]; return next; });
-    setCart(prev => prev.filter(c => c.key !== key));
+  const removeFromCart = (id: string) => {
+    setQtyInputs(prev => { const next = { ...prev }; delete next[id]; return next; });
+    setCart(prev => prev.filter(c => c.product.id !== id));
   };
 
   const paidNum = parseFloat(paid) || 0;
@@ -173,11 +130,7 @@ const POSPage = () => {
     if (!user || cart.length === 0 || paidNum < total) return;
     setProcessing(true);
     try {
-      const saleItems = cart.map(c => ({
-        product_id: c.product.id,
-        quantity: c.quantity,
-        variant_id: c.variant?.id || null,
-      }));
+      const saleItems = cart.map(c => ({ product_id: c.product.id, quantity: c.quantity }));
       const { error } = await supabase.rpc('process_pos_sale' as never, {
         p_paid: paidNum,
         p_items: saleItems,
@@ -218,7 +171,7 @@ const POSPage = () => {
             {filtered.map(p => (
               <button
                 key={p.id}
-                onClick={() => handleProductClick(p)}
+                onClick={() => addToCart(p)}
                 className="group bg-card rounded-2xl p-3 text-left border border-border hover:border-primary hover:shadow-md active:scale-[0.98] transition-all flex flex-col"
               >
                 <div className="aspect-square w-full rounded-xl bg-muted mb-3 overflow-hidden flex items-center justify-center">
@@ -240,14 +193,8 @@ const POSPage = () => {
                   </p>
                 )}
                 <div className="mt-auto flex items-end justify-between gap-2">
-                  {p.variants.length > 0 ? (
-                    <span className="text-xs font-bold text-primary flex items-center gap-1">
-                      <Layers className="w-3 h-3" /> {p.variants.length} variants
-                    </span>
-                  ) : (
-                    <span className="text-base font-extrabold text-primary">{peso(p.selling_price)}</span>
-                  )}
-                  {trackInventory && p.variants.length === 0 && (
+                  <span className="text-base font-extrabold text-primary">{peso(p.selling_price)}</span>
+                  {trackInventory && (
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${p.stock <= 0 ? 'bg-destructive/10 text-destructive' : p.stock <= 5 ? 'bg-[hsl(var(--warning)/0.15)] text-[hsl(var(--warning))]' : 'bg-secondary text-muted-foreground'}`}>
                       {p.stock} left
                     </span>
@@ -276,30 +223,30 @@ const POSPage = () => {
             ) : (
               <div className="space-y-2 max-h-[40vh] overflow-y-auto">
                 {cart.map(c => (
-                  <div key={c.key} className="flex items-center gap-2">
+                  <div key={c.product.id} className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{c.displayName}</p>
+                      <p className="text-sm font-semibold truncate">{c.product.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {peso(c.unitPrice)} each
+                        {peso(c.product.selling_price)} each
                         {(c.product.package_type || c.product.size_value) && (
                           <span className="ml-1.5">· {[c.product.package_type, c.product.size_value].filter(Boolean).join(' · ')}</span>
                         )}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => updateQty(c.key, -0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
+                      <button onClick={() => updateQty(c.product.id, -0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Minus className="w-3 h-3" /></button>
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={getQtyDisplay(c.key, c.quantity)}
-                        onChange={e => setQty(c.key, e.target.value)}
-                        onBlur={() => handleQtyBlur(c.key)}
+                        value={getQtyDisplay(c.product.id, c.quantity)}
+                        onChange={e => setQty(c.product.id, e.target.value)}
+                        onBlur={() => handleQtyBlur(c.product.id)}
                         className="w-12 text-center text-sm font-bold bg-background border border-border rounded-md h-7"
                       />
-                      <button onClick={() => updateQty(c.key, 0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
+                      <button onClick={() => updateQty(c.product.id, 0.25)} className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center active:scale-90"><Plus className="w-3 h-3" /></button>
                     </div>
-                    <p className="text-sm font-bold w-16 text-right">{peso(c.unitPrice * c.quantity)}</p>
-                    <button onClick={() => removeFromCart(c.key)} className="text-destructive active:scale-90"><Trash2 className="w-4 h-4" /></button>
+                    <p className="text-sm font-bold w-16 text-right">{peso(c.product.selling_price * c.quantity)}</p>
+                    <button onClick={() => removeFromCart(c.product.id)} className="text-destructive active:scale-90"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
               </div>
@@ -327,49 +274,6 @@ const POSPage = () => {
         </aside>
       </div>
 
-      {/* Variant picker */}
-      <Dialog open={!!variantPickerProduct} onOpenChange={open => !open && setVariantPickerProduct(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Choose variant — {variantPickerProduct?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-            {variantPickerProduct?.variants.map(v => {
-              const stock = Number(v.stock ?? 0);
-              const oos = trackInventory && stock <= 0;
-              return (
-                <button
-                  key={v.id}
-                  disabled={oos}
-                  onClick={() => { addItem(variantPickerProduct, v); setVariantPickerProduct(null); }}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${oos ? 'opacity-50 cursor-not-allowed border-border' : 'border-border hover:border-primary hover:bg-muted/30 active:scale-[0.98]'}`}
-                >
-                  <div className="w-12 h-12 rounded-md bg-muted overflow-hidden flex items-center justify-center shrink-0">
-                    {v.image_url ? (
-                      <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="w-5 h-5 text-muted-foreground/50" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold truncate">{v.name}</p>
-                    <p className="text-sm font-bold text-primary">{peso(v.selling_price)}</p>
-                  </div>
-                  {trackInventory && (
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${stock <= 0 ? 'bg-destructive/10 text-destructive' : stock <= 5 ? 'bg-[hsl(var(--warning)/0.15)] text-[hsl(var(--warning))]' : 'bg-secondary text-muted-foreground'}`}>
-                      {stock} left
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-            {variantPickerProduct?.variants.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No variants yet</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {receipt && (
         <div className="fixed inset-0 z-50 bg-foreground/40 flex items-center justify-center p-4" onClick={() => setReceipt(null)}>
           <div className="bg-background rounded-2xl p-5 w-full max-w-sm animate-scale-in" onClick={e => e.stopPropagation()}>
@@ -380,8 +284,8 @@ const POSPage = () => {
             <div className="space-y-1 mb-3">
               {receipt.items.map((c, i) => (
                 <div key={i} className="flex justify-between text-sm">
-                  <span>{c.displayName} ×{c.quantity}</span>
-                  <span className="font-semibold">{peso(c.unitPrice * c.quantity)}</span>
+                  <span>{c.product.name} ×{c.quantity}</span>
+                  <span className="font-semibold">{peso(c.product.selling_price * c.quantity)}</span>
                 </div>
               ))}
             </div>

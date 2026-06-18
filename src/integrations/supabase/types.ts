@@ -184,53 +184,6 @@ export type Database = {
           },
         ]
       }
-      product_variants: {
-        Row: {
-          buying_price: number
-          created_at: string
-          id: string
-          image_url: string | null
-          name: string
-          product_id: string
-          selling_price: number
-          stock: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          buying_price?: number
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          name: string
-          product_id: string
-          selling_price?: number
-          stock?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          buying_price?: number
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          name?: string
-          product_id?: string
-          selling_price?: number
-          stock?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_variants_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       products: {
         Row: {
           brand: string | null
@@ -323,8 +276,6 @@ export type Database = {
           product_name: string
           quantity: number
           transaction_id: string
-          variant_id: string | null
-          variant_name: string | null
         }
         Insert: {
           cost: number
@@ -333,8 +284,6 @@ export type Database = {
           product_name: string
           quantity: number
           transaction_id: string
-          variant_id?: string | null
-          variant_name?: string | null
         }
         Update: {
           cost?: number
@@ -343,8 +292,6 @@ export type Database = {
           product_name?: string
           quantity?: number
           transaction_id?: string
-          variant_id?: string | null
-          variant_name?: string | null
         }
         Relationships: [
           {
