@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Pencil, Trash2, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, ImagePlus, Loader2, Globe, Copy, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Search, Filter, Tag, CheckSquare, MoveRight, ChevronDown, Clock, ImagePlus, Loader2, Globe, Copy, AlertTriangle, Layers } from 'lucide-react';
 import { useInventoryTracking } from '@/hooks/useInventoryTracking';
 import WebImagePicker from '@/components/WebImagePicker';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,15 @@ interface Product {
   created_at: string;
 }
 
+interface Variant {
+  id?: string;
+  name: string;
+  buying_price: number;
+  selling_price: number;
+  stock: number | null;
+  image_url: string | null;
+}
+
 interface HistoryEntry {
   id: string;
   product_id: string;
@@ -62,13 +71,18 @@ const formatRelative = (dateStr: string | null) => {
   return d.toLocaleDateString();
 };
 
+const emptyVariant = (): Variant => ({ name: '', buying_price: 0, selling_price: 0, stock: 0, image_url: null });
+
 const InventoryPage = () => {
   const { user } = useAuth();
   const { trackInventory } = useInventoryTracking();
   const [products, setProducts] = useState<Product[]>([]);
+  const [variantCounts, setVariantCounts] = useState<Record<string, number>>({});
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
+  const [variants, setVariants] = useState<Variant[]>([]);
+  const [removedVariantIds, setRemovedVariantIds] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('__all__');
   const [showCategoryManager, setShowCategoryManager] = useState(false);
@@ -81,6 +95,7 @@ const InventoryPage = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [historyByProduct, setHistoryByProduct] = useState<Record<string, HistoryEntry[]>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
   const [showWebPicker, setShowWebPicker] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -88,6 +103,10 @@ const InventoryPage = () => {
     if (!user) return;
     const { data } = await supabase.from('products').select('*').eq('user_id', user.id).order('name');
     setProducts((data || []).map(p => ({ ...p, buying_price: Number(p.buying_price), selling_price: Number(p.selling_price) })) as Product[]);
+    const { data: vs } = await supabase.from('product_variants' as never).select('product_id').eq('user_id', user.id) as { data: { product_id: string }[] | null };
+    const counts: Record<string, number> = {};
+    (vs || []).forEach(v => { counts[v.product_id] = (counts[v.product_id] || 0) + 1; });
+    setVariantCounts(counts);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
@@ -132,24 +151,34 @@ const InventoryPage = () => {
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, categoryFilter]);
 
 
+  const uploadToBucket = async (file: File): Promise<string> => {
+    if (!user) throw new Error('Not signed in');
+    if (file.size > 15 * 1024 * 1024) throw new Error('Image must be under 15MB');
+    const optimized = await compressImage(file);
+    const ext = (optimized.type === 'image/jpeg' ? 'jpg' : optimized.name.split('.').pop()) || 'jpg';
+    const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('product-images').upload(path, optimized, { upsert: false, contentType: optimized.type });
+    if (error) throw error;
+    return supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+  };
+
   const handleImageUpload = async (file: File) => {
-    if (!user) return;
-    if (file.size > 15 * 1024 * 1024) { toast.error('Image must be under 15MB'); return; }
     setUploadingImage(true);
     try {
-      const optimized = await compressImage(file);
-      const ext = (optimized.type === 'image/jpeg' ? 'jpg' : optimized.name.split('.').pop()) || 'jpg';
-      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from('product-images').upload(path, optimized, { upsert: false, contentType: optimized.type });
-      if (error) throw error;
-      const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-      setForm(f => ({ ...f, imageUrl: data.publicUrl }));
+      const url = await uploadToBucket(file);
+      setForm(f => ({ ...f, imageUrl: url }));
       toast.success('Image uploaded');
-    } catch (err: any) {
-      toast.error(err.message || 'Upload failed');
-    } finally {
-      setUploadingImage(false);
-    }
+    } catch (err: any) { toast.error(err.message || 'Upload failed'); }
+    finally { setUploadingImage(false); }
+  };
+
+  const handleVariantImageUpload = async (idx: number, file: File) => {
+    setUploadingVariantIdx(idx);
+    try {
+      const url = await uploadToBucket(file);
+      setVariants(vs => vs.map((v, i) => i === idx ? { ...v, image_url: url } : v));
+    } catch (err: any) { toast.error(err.message || 'Upload failed'); }
+    finally { setUploadingVariantIdx(null); }
   };
 
   const handleSubmit = async () => {
@@ -166,24 +195,51 @@ const InventoryPage = () => {
         size_value: form.sizeValue.trim() || null,
       };
       if (trackInventory) payload.stock = parseInt(form.stock) || 0;
+      let productId = editId;
       if (editId) {
         const { error } = await supabase.from('products').update(payload).eq('id', editId);
         if (error) throw error;
-        // Invalidate cached history so next expand re-fetches
         setHistoryByProduct(prev => { const n = { ...prev }; delete n[editId]; return n; });
-        toast.success('Product updated');
       } else {
-        const { error } = await supabase.from('products').insert({ user_id: user.id, ...payload });
+        const { data, error } = await supabase.from('products').insert({ user_id: user.id, ...payload }).select('id').single();
         if (error) throw error;
-        toast.success('Product added');
+        productId = data.id;
       }
-      setForm(emptyForm); setEditId(null); setShowForm(false); load();
+
+      // Persist variants
+      if (productId) {
+        if (removedVariantIds.length > 0) {
+          await supabase.from('product_variants' as never).delete().in('id', removedVariantIds);
+        }
+        const cleanVariants = variants.filter(v => v.name.trim());
+        for (const v of cleanVariants) {
+          const row: any = {
+            product_id: productId,
+            user_id: user.id,
+            name: v.name.trim(),
+            buying_price: Number(v.buying_price) || 0,
+            selling_price: Number(v.selling_price) || 0,
+            image_url: v.image_url,
+          };
+          if (trackInventory) row.stock = Number(v.stock) || 0;
+          if (v.id) {
+            await supabase.from('product_variants' as never).update(row).eq('id', v.id);
+          } else {
+            await supabase.from('product_variants' as never).insert(row);
+          }
+        }
+      }
+
+      toast.success(editId ? 'Product updated' : 'Product added');
+      setForm(emptyForm); setEditId(null); setShowForm(false);
+      setVariants([]); setRemovedVariantIds([]);
+      load();
     } catch (err: any) {
       toast.error(err.message);
     }
   };
 
-  const startEdit = (p: Product) => {
+  const startEdit = async (p: Product) => {
     setForm({
       name: p.name,
       brand: p.brand || '',
@@ -195,7 +251,32 @@ const InventoryPage = () => {
       sizeValue: p.size_value || '',
       stock: String(p.stock ?? 0),
     });
-    setEditId(p.id); setShowForm(true);
+    setEditId(p.id);
+    setRemovedVariantIds([]);
+    const { data } = await supabase.from('product_variants' as never).select('*').eq('product_id', p.id).order('name') as { data: any[] | null };
+    setVariants((data || []).map(v => ({
+      id: v.id, name: v.name,
+      buying_price: Number(v.buying_price),
+      selling_price: Number(v.selling_price),
+      stock: v.stock === null ? null : Number(v.stock),
+      image_url: v.image_url,
+    })));
+    setShowForm(true);
+  };
+
+  const openAdd = () => {
+    setForm(emptyForm); setEditId(null);
+    setVariants([]); setRemovedVariantIds([]);
+    setShowForm(true);
+  };
+
+  const addVariant = () => setVariants(vs => [...vs, emptyVariant()]);
+  const updateVariant = (idx: number, patch: Partial<Variant>) =>
+    setVariants(vs => vs.map((v, i) => i === idx ? { ...v, ...patch } : v));
+  const removeVariant = (idx: number) => {
+    const v = variants[idx];
+    if (v.id) setRemovedVariantIds(ids => [...ids, v.id!]);
+    setVariants(vs => vs.filter((_, i) => i !== idx));
   };
 
   const handleDelete = async () => {
@@ -343,7 +424,7 @@ const InventoryPage = () => {
             </Button>
           )}
           {!isSelecting && (
-            <Button size="sm" onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}>
+            <Button size="sm" onClick={openAdd}>
               <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
           )}
@@ -383,6 +464,7 @@ const InventoryPage = () => {
         {filtered.length === 0 && products.length > 0 && <p className="text-center text-muted-foreground py-4">No matching products</p>}
         {filtered.slice(0, visibleCount).map(p => {
           const isExpanded = expandedId === p.id;
+          const vCount = variantCounts[p.id] || 0;
           return (
             <div key={p.id} className={`bg-card rounded-xl border border-border ${selectedIds.has(p.id) ? 'ring-2 ring-primary' : ''} shadow-mui-1 hover:shadow-mui-2 transition-shadow overflow-hidden`}>
               <button
@@ -416,6 +498,11 @@ const InventoryPage = () => {
                       {(p.package_type || p.size_value) && (
                         <p className="text-xs text-muted-foreground mt-0.5 truncate">
                           {[p.size_value, p.package_type].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                      {vCount > 0 && (
+                        <p className="text-[11px] text-primary font-semibold mt-0.5 flex items-center gap-1">
+                          <Layers className="w-3 h-3" /> {vCount} variant{vCount > 1 ? 's' : ''}
                         </p>
                       )}
                     </div>
@@ -540,6 +627,61 @@ const InventoryPage = () => {
               {trackInventory && (
                 <Input type="number" inputMode="numeric" placeholder="Stock quantity" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="h-11" />
               )}
+
+              {/* Variants section */}
+              <div className="border-t border-border pt-3 mt-1">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-primary" />
+                    <h4 className="font-bold text-sm">Variants {variants.length > 0 && <span className="text-muted-foreground font-normal">({variants.length})</span>}</h4>
+                  </div>
+                  <Button type="button" size="sm" variant="outline" onClick={addVariant}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add variant
+                  </Button>
+                </div>
+                {variants.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">No variants. Add one to sell different flavors/sizes with their own price & stock.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {variants.map((v, idx) => (
+                      <div key={idx} className="bg-muted/30 border border-border rounded-lg p-2.5 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-12 h-12 rounded-md border border-border bg-card flex items-center justify-center overflow-hidden shrink-0">
+                            {v.image_url ? (
+                              <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <Input placeholder="Variant name (e.g. Brown, Black)" value={v.name} onChange={e => updateVariant(idx, { name: e.target.value })} className="h-9 flex-1" />
+                          <button type="button" onClick={() => removeVariant(idx)} className="text-destructive shrink-0 p-1">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input type="number" inputMode="decimal" placeholder="Buy" value={String(v.buying_price)} onChange={e => updateVariant(idx, { buying_price: parseFloat(e.target.value) || 0 })} className="h-9 text-sm" />
+                          <Input type="number" inputMode="decimal" placeholder="Sell" value={String(v.selling_price)} onChange={e => updateVariant(idx, { selling_price: parseFloat(e.target.value) || 0 })} className="h-9 text-sm" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {trackInventory && (
+                            <Input type="number" inputMode="numeric" placeholder="Stock" value={String(v.stock ?? 0)} onChange={e => updateVariant(idx, { stock: parseInt(e.target.value) || 0 })} className="h-9 text-sm" />
+                          )}
+                          <label className={trackInventory ? '' : 'col-span-2'}>
+                            <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleVariantImageUpload(idx, f); }} />
+                            <Button asChild size="sm" variant="outline" className="w-full h-9" disabled={uploadingVariantIdx === idx}>
+                              <span className="cursor-pointer">
+                                {uploadingVariantIdx === idx ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5 mr-1" />}
+                                {v.image_url ? 'Change image' : 'Add image'}
+                              </span>
+                            </Button>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <Button onClick={handleSubmit} className="w-full h-11 font-bold">{editId ? 'Update Product' : 'Add Product'}</Button>
             </div>
           </div>
