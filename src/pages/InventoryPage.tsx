@@ -103,7 +103,7 @@ const InventoryPage = () => {
     if (!user) return;
     const { data } = await supabase.from('products').select('*').eq('user_id', user.id).order('name');
     setProducts((data || []).map(p => ({ ...p, buying_price: Number(p.buying_price), selling_price: Number(p.selling_price) })) as Product[]);
-    const { data: vs } = await supabase.from('product_variants' as never).select('product_id').eq('user_id', user.id) as { data: { product_id: string }[] | null };
+    const { data: vs } = await (supabase as any).from('product_variants').select('product_id').eq('user_id', user.id) as { data: { product_id: string }[] | null };
     const counts: Record<string, number> = {};
     (vs || []).forEach(v => { counts[v.product_id] = (counts[v.product_id] || 0) + 1; });
     setVariantCounts(counts);
@@ -209,7 +209,7 @@ const InventoryPage = () => {
       // Persist variants
       if (productId) {
         if (removedVariantIds.length > 0) {
-          await supabase.from('product_variants' as never).delete().in('id', removedVariantIds);
+          await (supabase as any).from('product_variants').delete().in('id', removedVariantIds);
         }
         const cleanVariants = variants.filter(v => v.name.trim());
         for (const v of cleanVariants) {
@@ -223,9 +223,9 @@ const InventoryPage = () => {
           };
           if (trackInventory) row.stock = Number(v.stock) || 0;
           if (v.id) {
-            await supabase.from('product_variants' as never).update(row).eq('id', v.id);
+            await (supabase as any).from('product_variants').update(row).eq('id', v.id);
           } else {
-            await supabase.from('product_variants' as never).insert(row);
+            await (supabase as any).from('product_variants').insert(row);
           }
         }
       }
@@ -253,7 +253,7 @@ const InventoryPage = () => {
     });
     setEditId(p.id);
     setRemovedVariantIds([]);
-    const { data } = await supabase.from('product_variants' as never).select('*').eq('product_id', p.id).order('name') as { data: any[] | null };
+    const { data } = await (supabase as any).from('product_variants').select('*').eq('product_id', p.id).order('name') as { data: any[] | null };
     setVariants((data || []).map(v => ({
       id: v.id, name: v.name,
       buying_price: Number(v.buying_price),
