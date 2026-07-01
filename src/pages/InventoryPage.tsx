@@ -431,7 +431,7 @@ const InventoryPage = () => {
                     Stock: {p.stock ?? 0}
                   </div>
                 )}
-                <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
+                <div className="grid grid-cols-3 gap-1 mt-2 text-sm">
                   <div><div className="text-xs text-muted-foreground">Buy</div><div className="font-bold text-base">{peso(p.buying_price)}</div></div>
                   <div><div className="text-xs text-muted-foreground">Sell</div><div className="font-bold text-base">{peso(p.selling_price)}</div></div>
                   <div><div className="text-xs text-muted-foreground">Profit</div><div className="font-bold text-base text-success">{peso(p.selling_price - p.buying_price)}</div></div>
