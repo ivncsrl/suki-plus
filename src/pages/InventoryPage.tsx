@@ -400,10 +400,10 @@ const InventoryPage = () => {
                       className="w-5 h-5 rounded border-border accent-primary shrink-0"
                     />
                     {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} loading="lazy" decoding="async" className="w-16 h-16 rounded-lg object-cover border border-border shrink-0" />
+                      <img src={p.image_url} alt={p.name} loading="lazy" decoding="async" className="w-24 h-24 rounded-xl object-cover border border-border shrink-0" />
                     ) : (
-                      <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <ImagePlus className="w-6 h-6 text-muted-foreground" />
+                      <div className="w-24 h-24 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                        <ImagePlus className="w-8 h-8 text-muted-foreground" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
@@ -431,7 +431,7 @@ const InventoryPage = () => {
                     Stock: {p.stock ?? 0}
                   </div>
                 )}
-                <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
+                <div className="grid grid-cols-3 gap-1 mt-2 text-sm">
                   <div><div className="text-xs text-muted-foreground">Buy</div><div className="font-bold text-base">{peso(p.buying_price)}</div></div>
                   <div><div className="text-xs text-muted-foreground">Sell</div><div className="font-bold text-base">{peso(p.selling_price)}</div></div>
                   <div><div className="text-xs text-muted-foreground">Profit</div><div className="font-bold text-base text-success">{peso(p.selling_price - p.buying_price)}</div></div>
@@ -448,8 +448,8 @@ const InventoryPage = () => {
                     <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => handleDuplicate(p)}>
                       <Copy className="w-3.5 h-3.5 mr-1.5" /> Duplicate
                     </Button>
-                    <Button size="sm" variant="destructive" className="flex-1 h-9" onClick={() => setDeleteTarget(p)}>
-                      <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
+                    <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10" onClick={() => setDeleteTarget(p)}>
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
