@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { peso, getBusinessDayStart, getBusinessDate } from '@/lib/format';
-import { ShoppingCart, Package, TrendingUp, LogOut, CalendarRange, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, Package, TrendingUp, LogOut, CalendarRange, AlertTriangle, Trophy, ChevronDown, ChevronUp } from 'lucide-react';
 import { useInventoryTracking } from '@/hooks/useInventoryTracking';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -37,6 +37,8 @@ const DashboardPage = () => {
   });
   const [lowStock, setLowStock] = useState<Array<{ id: string; name: string; stock: number }>>([]);
   const [inventoryStats, setInventoryStats] = useState({ costValue: 0, potentialRevenue: 0, potentialProfit: 0 });
+  const [bestSellers, setBestSellers] = useState<Array<{ name: string; quantity: number; revenue: number }>>([]);
+  const [showAllBestSellers, setShowAllBestSellers] = useState(false);
   const [loading, setLoading] = useState(true);
 
 
@@ -52,14 +54,28 @@ const DashboardPage = () => {
       weekStartDate.setDate(weekStartDate.getDate() - offsetToMonday);
       const weekStartIso = weekStartDate.toISOString();
 
-      const [profileRes, productsRes, weekTxnRes] = await Promise.all([
+      const [profileRes, productsRes, weekTxnRes, itemsRes] = await Promise.all([
         supabase.from('profiles').select('store_name').eq('user_id', user.id).single(),
         supabase.from('products').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('transactions').select('total, profit, created_at').eq('user_id', user.id).gte('created_at', weekStartIso),
+        supabase.from('transaction_items').select('product_name, quantity, price, transactions!inner(user_id)').eq('transactions.user_id', user.id),
       ]);
 
       const productCount = productsRes.count || 0;
       const txns = weekTxnRes.data || [];
+
+      // Aggregate best sellers by product name
+      const bsMap = new Map<string, { name: string; quantity: number; revenue: number }>();
+      for (const it of (itemsRes.data || []) as any[]) {
+        const name = it.product_name as string;
+        const qty = Number(it.quantity) || 0;
+        const rev = qty * (Number(it.price) || 0);
+        const cur = bsMap.get(name);
+        if (cur) { cur.quantity += qty; cur.revenue += rev; }
+        else bsMap.set(name, { name, quantity: qty, revenue: rev });
+      }
+      const bestSellersArr = Array.from(bsMap.values()).sort((a, b) => b.quantity - a.quantity);
+      setBestSellers(bestSellersArr);
 
       // Build 7-day buckets Mon..Sun starting from weekStartDate
       const weekData: DayPoint[] = [];
@@ -225,6 +241,42 @@ const DashboardPage = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Best Sellers */}
+      <div className="bg-card rounded-xl border border-border p-4 mb-4 shadow-mui-1">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-[hsl(var(--warning))]" />
+            <h2 className="font-bold text-sm">Top Best Sellers</h2>
+          </div>
+          {bestSellers.length > 5 && (
+            <button
+              onClick={() => setShowAllBestSellers(v => !v)}
+              className="text-xs font-semibold text-primary flex items-center gap-1 active:scale-95"
+            >
+              {showAllBestSellers ? <>Show less <ChevronUp className="w-3 h-3" /></> : <>Show all ({bestSellers.length}) <ChevronDown className="w-3 h-3" /></>}
+            </button>
+          )}
+        </div>
+        {bestSellers.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No sales recorded yet.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {(showAllBestSellers ? bestSellers : bestSellers.slice(0, 5)).map((b, i) => (
+              <li key={b.name} className="flex items-center gap-3 py-2">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${i === 0 ? 'bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]' : i === 1 ? 'bg-muted text-foreground/80' : i === 2 ? 'bg-orange-100 text-orange-700' : 'bg-secondary text-muted-foreground'}`}>
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{b.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{peso(b.revenue)} revenue</p>
+                </div>
+                <span className="text-sm font-extrabold text-primary shrink-0">{b.quantity}<span className="text-[10px] font-semibold text-muted-foreground ml-1">sold</span></span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {trackInventory && (
