@@ -400,10 +400,10 @@ const InventoryPage = () => {
                       className="w-5 h-5 rounded border-border accent-primary shrink-0"
                     />
                     {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} loading="lazy" decoding="async" className="w-16 h-16 rounded-lg object-cover border border-border shrink-0" />
+                      <img src={p.image_url} alt={p.name} loading="lazy" decoding="async" className="w-24 h-24 rounded-xl object-cover border border-border shrink-0" />
                     ) : (
-                      <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <ImagePlus className="w-6 h-6 text-muted-foreground" />
+                      <div className="w-24 h-24 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                        <ImagePlus className="w-8 h-8 text-muted-foreground" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
