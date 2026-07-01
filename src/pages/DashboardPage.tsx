@@ -37,6 +37,8 @@ const DashboardPage = () => {
   });
   const [lowStock, setLowStock] = useState<Array<{ id: string; name: string; stock: number }>>([]);
   const [inventoryStats, setInventoryStats] = useState({ costValue: 0, potentialRevenue: 0, potentialProfit: 0 });
+  const [bestSellers, setBestSellers] = useState<Array<{ name: string; quantity: number; revenue: number }>>([]);
+  const [showAllBestSellers, setShowAllBestSellers] = useState(false);
   const [loading, setLoading] = useState(true);
 
 
