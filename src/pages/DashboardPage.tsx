@@ -54,14 +54,28 @@ const DashboardPage = () => {
       weekStartDate.setDate(weekStartDate.getDate() - offsetToMonday);
       const weekStartIso = weekStartDate.toISOString();
 
-      const [profileRes, productsRes, weekTxnRes] = await Promise.all([
+      const [profileRes, productsRes, weekTxnRes, itemsRes] = await Promise.all([
         supabase.from('profiles').select('store_name').eq('user_id', user.id).single(),
         supabase.from('products').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('transactions').select('total, profit, created_at').eq('user_id', user.id).gte('created_at', weekStartIso),
+        supabase.from('transaction_items').select('product_name, quantity, price, transactions!inner(user_id)').eq('transactions.user_id', user.id),
       ]);
 
       const productCount = productsRes.count || 0;
       const txns = weekTxnRes.data || [];
+
+      // Aggregate best sellers by product name
+      const bsMap = new Map<string, { name: string; quantity: number; revenue: number }>();
+      for (const it of (itemsRes.data || []) as any[]) {
+        const name = it.product_name as string;
+        const qty = Number(it.quantity) || 0;
+        const rev = qty * (Number(it.price) || 0);
+        const cur = bsMap.get(name);
+        if (cur) { cur.quantity += qty; cur.revenue += rev; }
+        else bsMap.set(name, { name, quantity: qty, revenue: rev });
+      }
+      const bestSellersArr = Array.from(bsMap.values()).sort((a, b) => b.quantity - a.quantity);
+      setBestSellers(bestSellersArr);
 
       // Build 7-day buckets Mon..Sun starting from weekStartDate
       const weekData: DayPoint[] = [];
